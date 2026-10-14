@@ -1,4 +1,5 @@
 import { ClaudeLoginError, type Claude } from "./claude.ts";
+import { refLabel } from "./prRef.ts";
 import { BRIEFING_VERSION, briefingPrompt, briefingSchema, briefingSystem, cleanBriefing, type Briefing } from "./prompts/briefing.ts";
 import type { Store } from "./store.ts";
 import type { NoteState, Pr } from "./types.ts";
@@ -7,7 +8,7 @@ export type BriefingResult = NoteState & { briefing?: Briefing };
 
 export function createBriefings({ claude, store }: { claude: Pick<Claude, "ask">; store: Store }) {
   const states = new Map<string, NoteState>();
-  const keyOf = (pr: Pr) => `${pr.owner}/${pr.repo}#${pr.number}@${pr.headSha}`;
+  const keyOf = (pr: Pr) => `${refLabel(pr)}@${pr.headSha}`;
   const cacheName = (pr: Pr) => `cache/${pr.headSha}/briefing-v${BRIEFING_VERSION}.json`;
 
   async function generate(pr: Pr) {

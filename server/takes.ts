@@ -43,7 +43,7 @@ export function createTakes({ claude, store, notesFor, now = () => new Date().to
         await save(pr, done);
         await appendMisses(
           store.root,
-          comparison.missed.map((m) => ({ at: take.at, owner: pr.owner, repo: pr.repo, number: pr.number, path, hunkIndex, category: m.category, what: m.what })),
+          comparison.missed.map((m) => ({ at: take.at, owner: pr.owner, repo: pr.repo, number: pr.number, ...(pr.branch ? { branch: pr.branch } : {}), path, hunkIndex, category: m.category, what: m.what })),
         );
         return done;
       } catch (error) {

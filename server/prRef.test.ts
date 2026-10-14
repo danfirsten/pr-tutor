@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { parsePrRef } from "./prRef.ts";
+import { parsePrRef, refLabel } from "./prRef.ts";
 
 describe("parsePrRef", () => {
   it("reads a full PR URL", () => {
@@ -23,5 +23,12 @@ describe("parsePrRef", () => {
     expect(parsePrRef("https://github.com/acme/widgets/issues/42")).toBeNull();
     expect(parsePrRef("acme/widgets#0")).toBeNull();
     expect(parsePrRef("")).toBeNull();
+  });
+});
+
+describe("refLabel", () => {
+  it("names a PR by number and a local review by branch", () => {
+    expect(refLabel({ owner: "acme", repo: "widgets", number: 42 })).toBe("acme/widgets#42");
+    expect(refLabel({ owner: "acme", repo: "widgets", number: 0, branch: "feature/x" })).toBe("acme/widgets@feature/x");
   });
 });

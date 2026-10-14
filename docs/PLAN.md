@@ -127,6 +127,15 @@ Each slice branches from `main` after the one before it merges. Source line coun
 | 6 | `slice-6-coach-skill` | "Coach this", the `pr-tutor-review` Claude Code skill, README install steps | ~250 | Skill posts only after a yes |
 | 7 | `slice-7-take-first` | Take-first toggle, reveal and compare, learning log, misses view, notes prompt reads top misses | ~400 | Off by default |
 
+Added after v1:
+
+| # | Branch | What it delivers | Safe alone because |
+|---|---|---|---|
+| 8 | `slice-8-keyboard` | Keyboard control for every action | Keys only |
+| 9 | `slice-9-local` | `pr-tutor --local`: review an unpushed branch from git, keyed by repo + branch + head SHA, checklist instead of a post | Reads git only; PR mode untouched apart from passing the snapshot to the file reader |
+
+Local reviews reuse `Pr` with `number: 0` and a `branch`, plus `local.dir` so the server can reload the snapshot and read files with `git show`, even when an already-running server opened it. `refLabel` (`owner/repo#n` or `owner/repo@branch`) keys the in-memory caches.
+
 From slice 3 on, you can review each PR with pr-tutor itself. That's good practice, and it's the best test the tool will get.
 
 ## Risks

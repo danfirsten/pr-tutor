@@ -66,8 +66,28 @@ Claude reads your draft, checks each comment against the code, tells you what's 
 
 Reviewing your own PR before anyone else sees it? Say "apply my pr-tutor review" instead. Claude treats your comments as a to-do list, fixes the code once you agree the plan, and never posts anything.
 
+## Review your own branch before you push
+
+Run this inside a repo, on the branch you want to check:
+
+```bash
+pr-tutor --local
+pr-tutor --local --base origin/dev
+```
+
+It reviews `git diff <base>...<branch>`, so only committed work is included, and you get the same briefing, notes and line comments as for a PR. The title comes from your latest commit, and the commit messages stand in for the PR description. Without `--base` it uses `origin/HEAD`, then `main` or `master`. It doesn't need `gh` or a remote.
+
+Nothing gets posted from a local review. There's no verdict, and the comments become a checklist saved to:
+
+```
+~/.pr-tutor/reviews/<owner>/<repo>/local/<branch>/review.md
+```
+
+Owner and repo come from a GitHub `origin` remote, or `local/<folder name>` without one. Fix what you found, commit, and run `pr-tutor --local` again. Notes are cached per commit, so the new head gets fresh ones, and comments from the earlier commit are flagged as written on an older version.
+
 ## What gets sent where
 
+- To git, for `--local`: read-only commands in your repo (`diff`, `log`, `show`). Nothing is written to it.
 - To GitHub, through `gh`: read requests for the PR, its files and file contents. Nothing is written to GitHub until you approve a post in Claude Code.
 - To Claude, through your Claude Code login: the PR title and description, the diff, and the changed files' contents, so the notes have context. Calls run with tools switched off and without your Claude Code settings, hooks or MCP servers.
 - On disk, in `~/.pr-tutor/`: the PR snapshot, cached notes (keyed by commit, so they regenerate when the PR changes) and your drafts.

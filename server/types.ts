@@ -2,6 +2,7 @@ export interface PrRef {
   owner: string;
   repo: string;
   number: number;
+  branch?: string;
 }
 
 export type FileStatus = "added" | "removed" | "modified" | "renamed" | "copied" | "changed" | "unchanged";
@@ -25,6 +26,7 @@ export interface Pr extends PrRef {
   baseRef: string;
   headRef: string;
   files: PrFile[];
+  local?: { dir: string };
 }
 
 export interface ReviewState {
@@ -49,6 +51,7 @@ export interface Miss {
   owner: string;
   repo: string;
   number: number;
+  branch?: string;
   path: string;
   hunkIndex: number;
   category: Category;

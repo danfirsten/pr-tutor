@@ -69,12 +69,19 @@ This opens a local page in the browser. The reviewer works through the PR there.
 - [ ] If the CLI isn't logged in or its login has expired, the page says so in plain words and tells the user to run `claude` in a terminal and sign in, rather than showing a raw error.
 - [ ] A README covers install, first run, and how the Claude Code skill is installed.
 
+### Local mode (added after v1)
+- [ ] `pr-tutor --local [--base <ref>]`, run inside a git repo, reviews the checked-out branch against its base with the same briefing, notes and comments. It reads `git diff <base>...<branch>`, the branch name and the commit messages. No `gh`, no remote and no push needed.
+- [ ] The base defaults to `origin/HEAD`, then `main`, then `master`. If none exists it asks for `--base`.
+- [ ] Only committed work is reviewed. Uncommitted changes get a warning in the terminal.
+- [ ] A local review lives at `~/.pr-tutor/reviews/<owner>/<repo>/local/<branch>/`, with notes cached by head SHA as for a PR. Owner and repo come from a GitHub `origin`, or `local/<folder>` without one.
+- [ ] Nothing gets posted. The page hides the verdict and shows the comments as a checklist, `review.md` says so, and the `pr-tutor-review` skill refuses to post a local review.
+
 ## Out of scope for v1
 
 - A post button inside the page. Claude Code posts, after the user says yes.
 - Reading or replying to other people's existing review threads.
 - Hosting it anywhere, sharing it with a team, or accounts.
-- GitLab, Bitbucket or local branches without a PR.
+- GitLab and Bitbucket. (Local branches without a PR were added later as `pr-tutor --local`; see "Local mode" below.)
 - Editing code or suggesting commits.
 - Running the PR's tests or checking it out.
 - Very large PRs: above about 60 files or 3,000 changed lines, notes are generated only for the files the user opens.

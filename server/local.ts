@@ -62,8 +62,11 @@ export async function loadLocal({ dir, base, branch }: LocalOptions, run: Run = 
     (await git("symbolic-ref", "--short", "-q", "HEAD").catch(() => {
       throw new Error("HEAD isn't on a branch. Check out the branch you want to review.");
     }));
+  if (base?.startsWith("-")) throw new Error(`--base needs a branch or commit, not ${base}.`);
   const baseRef = base ?? (await defaultBase(git));
-  const headSha = await git("rev-parse", "--verify", `refs/heads/${name}^{commit}`);
+  const headSha = await git("rev-parse", "--verify", `refs/heads/${name}^{commit}`).catch(() => {
+    throw new Error(`There's no local branch called ${name}.`);
+  });
   const baseSha = await git("merge-base", baseRef, headSha).catch(() => {
     throw new Error(`Couldn't find where ${name} branched from ${baseRef}. Check the --base you passed.`);
   });

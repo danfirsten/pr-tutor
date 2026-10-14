@@ -71,6 +71,7 @@ describe("a local review", () => {
   it("is always a plain comment, since nothing gets posted", () => {
     const draft = cleanDraft(local, { ...emptyDraft(local), event: "APPROVE" });
     expect(draft).toMatchObject({ branch: "feature/x", event: "COMMENT" });
+    expect(cleanDraft(pr, { ...emptyDraft(pr), event: "APPROVE" }).event).toBe("APPROVE");
   });
 
   it("reads as a self-review checklist", () => {

@@ -69,7 +69,7 @@ describe("parseRemote", () => {
 
 async function repo() {
   const dir = await mkdtemp(join(tmpdir(), "pr-tutor-local-"));
-  const git = (...args: string[]) => execFileSync("git", ["-C", dir, "-c", "user.name=Sam", "-c", "user.email=sam@example.com", ...args], { encoding: "utf8" });
+  const git = (...args: string[]) => execFileSync("git", ["-C", dir, "-c", "user.name=Sam", "-c", "user.email=sam@example.com", "-c", "commit.gpgsign=false", "-c", "core.hooksPath=/dev/null", ...args], { encoding: "utf8" });
   git("init", "-q", "-b", "main");
   await writeFile(join(dir, "a.txt"), "one\ntwo\n");
   await writeFile(join(dir, "gone.txt"), "bye\n");
@@ -133,6 +133,12 @@ describe("loadLocal", () => {
     const { dir, git } = await repo();
     git("checkout", "-q", "main");
     await expect(loadLocal({ dir, base: "main" })).rejects.toThrow(/no commits/i);
+  });
+
+  it("won't pass an option off as the base, and names a missing branch", async () => {
+    const { dir } = await repo();
+    await expect(loadLocal({ dir, base: "--output=x" })).rejects.toThrow(/needs a branch or commit/);
+    await expect(loadLocal({ dir, base: "main", branch: "nope" })).rejects.toThrow(/no local branch called nope/);
   });
 
   it("asks for --base when it can't work one out", async () => {

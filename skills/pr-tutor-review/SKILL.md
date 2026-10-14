@@ -15,6 +15,8 @@ The draft lives at `~/.pr-tutor/reviews/<owner>/<repo>/<number>/`:
 - `review.md` is the same review, readable
 - `pr.json` is the PR snapshot the draft was written against
 
+A folder under `~/.pr-tutor/reviews/<owner>/<repo>/local/<branch>/`, or a `review.json` with a `branch`, is a self-review of an unpushed branch made with `pr-tutor --local`. Never post one: there's no PR to post to. If the user asks, coach the comments as a checklist and stop there.
+
 Accept `owner/repo#123` or a PR URL. If the user didn't say which PR, list the folders under `~/.pr-tutor/reviews/` and ask. If there's no `review.json`, or it has no comments and no summary, say so and stop.
 
 ## 2. Check it's still current

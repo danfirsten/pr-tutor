@@ -1,8 +1,10 @@
 import { MultiFileDiff, PatchDiff } from "@pierre/diffs/react";
-import { useEffect, useState } from "react";
+import type { DiffLineAnnotation } from "@pierre/diffs";
+import { useEffect, useState, type ReactNode } from "react";
 import type { FileContentsPair, PrFile, PrRef } from "../../server/types.ts";
 import { hunkPatch, type PatchHunk } from "../../server/patch.ts";
-import { loadFile } from "./api.ts";
+import { loadFile, type Concern } from "./api.ts";
+import { SeverityPill } from "./NotesPanel.tsx";
 import type { Theme } from "./theme.ts";
 
 interface Props {
@@ -12,23 +14,50 @@ interface Props {
   hunkIndex: number;
   fullFile: boolean;
   theme: Theme;
+  concerns: Concern[];
 }
 
-export function DiffPanel({ prRef, file, hunks, hunkIndex, fullFile, theme }: Props) {
+export function DiffPanel({ prRef, file, hunks, hunkIndex, fullFile, theme, concerns }: Props) {
   const options = { diffStyle: "unified", themeType: theme, disableFileHeader: true, overflow: "wrap", hunkSeparators: "simple" } as const;
 
-  if (fullFile) return <FullFile prRef={prRef} file={file} options={options} />;
+  const lineAnnotations = concerns.map((concern) => ({
+    side: concern.side === "old" ? ("deletions" as const) : ("additions" as const),
+    lineNumber: concern.line,
+    metadata: concern,
+  }));
+  const renderAnnotation = ({ metadata }: { metadata: Concern }) => (
+    <div className="inline-concern">
+      <SeverityPill severity={metadata.severity} />
+      <span>{metadata.text}</span>
+    </div>
+  );
+
+  if (fullFile) return <FullFile prRef={prRef} file={file} options={options} lineAnnotations={lineAnnotations} renderAnnotation={renderAnnotation} />;
   if (hunks.length === 0) return <p className="empty">No text diff for this file. It's binary, a rename with no changes, or too big for GitHub to show.</p>;
 
   const hunk = hunks[hunkIndex];
   return (
     <div className="diff">
-      <PatchDiff key={`${file.path}:${hunk.index}`} patch={hunkPatch(file.path, hunk, file.previousPath)} options={options} />
+      <PatchDiff
+        key={`${file.path}:${hunk.index}`}
+        patch={hunkPatch(file.path, hunk, file.previousPath)}
+        options={options}
+        lineAnnotations={lineAnnotations}
+        renderAnnotation={renderAnnotation}
+      />
     </div>
   );
 }
 
-function FullFile({ prRef, file, options }: { prRef: PrRef; file: PrFile; options: object }) {
+interface FullFileProps {
+  prRef: PrRef;
+  file: PrFile;
+  options: object;
+  lineAnnotations: DiffLineAnnotation<Concern>[];
+  renderAnnotation: (annotation: DiffLineAnnotation<Concern>) => ReactNode;
+}
+
+function FullFile({ prRef, file, options, lineAnnotations, renderAnnotation }: FullFileProps) {
   const [contents, setContents] = useState<FileContentsPair | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -46,6 +75,8 @@ function FullFile({ prRef, file, options }: { prRef: PrRef; file: PrFile; option
         oldFile={{ name: file.previousPath ?? file.path, contents: contents.old ?? "" }}
         newFile={{ name: file.path, contents: contents.new ?? "" }}
         options={{ ...options, expandUnchanged: true }}
+        lineAnnotations={lineAnnotations}
+        renderAnnotation={renderAnnotation}
       />
     </div>
   );

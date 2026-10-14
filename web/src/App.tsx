@@ -4,6 +4,8 @@ import type { Pr } from "../../server/types.ts";
 import { loadPr, loadState, prRefFromLocation, saveState } from "./api.ts";
 import { DiffPanel } from "./DiffPanel.tsx";
 import { KeyHelp } from "./KeyHelp.tsx";
+import { NotesPanel } from "./NotesPanel.tsx";
+import { useNotes } from "./useNotes.ts";
 import { useTheme } from "./theme.ts";
 import { useKeys } from "./useKeys.ts";
 
@@ -42,6 +44,8 @@ function Review({ pr }: { pr: Pr }) {
   const hunksByFile = useMemo(() => pr.files.map((f) => splitHunks(f.patch)), [pr]);
   const file = fileIndex === DESCRIPTION ? null : pr.files[fileIndex];
   const hunks = fileIndex === DESCRIPTION ? [] : hunksByFile[fileIndex];
+  const notes = useNotes(pr, file?.path ?? null);
+  const concerns = (notes.notes?.hunks ?? []).filter((h) => fullFile || h.hunkIndex === hunkIndex).flatMap((h) => h.concerns);
 
   useEffect(() => {
     loadState(pr).then((s) => setReviewed(new Set(s.reviewed)), () => {});
@@ -104,7 +108,7 @@ function Review({ pr }: { pr: Pr }) {
           <span className="label">Theme · {theme}</span>
         </button>
       </header>
-      <div className="body">
+      <div className={file ? "body with-notes" : "body"}>
         <nav className="files" aria-label="Changed files">
           <button className="file" aria-current={fileIndex === DESCRIPTION} onClick={() => goToFile(DESCRIPTION)}>
             <span className="tick" />
@@ -118,7 +122,7 @@ function Review({ pr }: { pr: Pr }) {
               </span>
               <span className="name">{f.path}</span>
               <span className="counts">
-                <span className="add">+{f.additions}</span> <span className="del">−{f.deletions}</span>
+                <NoteGlyph state={notes.status[f.path]?.state} /> <span className="add">+{f.additions}</span> <span className="del">−{f.deletions}</span>
               </span>
             </button>
           ))}
@@ -142,7 +146,7 @@ function Review({ pr }: { pr: Pr }) {
                   <span className="label">{reviewed.has(file.path) ? "Reviewed ✓" : "Mark reviewed"} · x</span>
                 </button>
               </div>
-              <DiffPanel prRef={pr} file={file} hunks={hunks} hunkIndex={hunkIndex} fullFile={fullFile} theme={theme} />
+              <DiffPanel prRef={pr} file={file} hunks={hunks} hunkIndex={hunkIndex} fullFile={fullFile} theme={theme} concerns={concerns} />
               <div className="nav">
                 <button className="pill" onClick={prevHunk}>
                   <span className="label">← Previous · k</span>
@@ -163,8 +167,15 @@ function Review({ pr }: { pr: Pr }) {
             </div>
           )}
         </main>
+        {file && <NotesPanel state={notes.state} notes={notes.notes} hunkIndex={hunkIndex} fullFile={fullFile} onRetry={() => notes.retry(file.path)} />}
       </div>
       {help && <KeyHelp onClose={() => setHelp(false)} />}
     </div>
   );
+}
+
+function NoteGlyph({ state }: { state: string | undefined }) {
+  if (state === "queued" || state === "running") return <span className="glyph pulse" title="Claude is writing notes">◐</span>;
+  if (state === "error") return <span className="glyph del" title="Notes failed">!</span>;
+  return null;
 }

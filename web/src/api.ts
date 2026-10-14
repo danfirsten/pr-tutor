@@ -22,3 +22,15 @@ export const loadState = (ref: PrRef) => request<ReviewState>(`/api/state?${quer
 
 export const saveState = (ref: PrRef, state: ReviewState) =>
   request<{ ok: true }>(`/api/state?${query(ref)}`, { method: "PUT", headers: { "content-type": "application/json" }, body: JSON.stringify(state) });
+
+export type { FileNotes, HunkNote, Concern, Severity } from "../../server/prompts/notes.ts";
+export type { NoteState } from "../../server/types.ts";
+import type { FileNotes } from "../../server/prompts/notes.ts";
+import type { NoteState } from "../../server/types.ts";
+
+export type NoteStatus = Record<string, NoteState>;
+
+export const startNotes = (ref: PrRef) => request<NoteStatus>(`/api/notes/start?${query(ref)}`, { method: "POST" });
+export const noteStatus = (ref: PrRef) => request<NoteStatus>(`/api/notes/status?${query(ref)}`);
+export const retryNotes = (ref: PrRef, path: string) => request<NoteStatus>(`/api/notes/retry?${query(ref)}&path=${encodeURIComponent(path)}`, { method: "POST" });
+export const loadNotes = (ref: PrRef, path: string) => request<NoteState & { notes?: FileNotes }>(`/api/notes?${query(ref)}&path=${encodeURIComponent(path)}`);

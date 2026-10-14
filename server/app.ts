@@ -3,12 +3,14 @@ import type { IncomingMessage, ServerResponse } from "node:http";
 import { extname, join, normalize, sep } from "node:path";
 import type { fetchFileAt as FetchFileAt, fetchPr as FetchPr } from "./gh.ts";
 import type { Store } from "./store.ts";
+import type { createNotes } from "./notes.ts";
 import type { Pr, PrRef, ReviewState } from "./types.ts";
 
 export interface AppDeps {
   store: Store;
   fetchPr: typeof FetchPr;
   fetchFileAt: typeof FetchFileAt;
+  notes: ReturnType<typeof createNotes>;
   webDir: string;
 }
 
@@ -24,7 +26,7 @@ const TYPES: Record<string, string> = {
 
 const LOCAL_HOST = /^(localhost|127\.0\.0\.1|\[::1\])(:\d+)?$/;
 
-export function createApp({ store, fetchPr, fetchFileAt, webDir }: AppDeps) {
+export function createApp({ store, fetchPr, fetchFileAt, notes, webDir }: AppDeps) {
   const prs = new Map<string, Pr>();
 
   async function loadPr(ref: PrRef, refresh: boolean): Promise<Pr> {
@@ -93,6 +95,22 @@ export function createApp({ store, fetchPr, fetchFileAt, webDir }: AppDeps) {
           return json(res, 200, { ok: true });
         }
         return json(res, 200, (await store.readReviewJson<ReviewState>(ref, "state.json")) ?? { reviewed: [] });
+      }
+      if (url.pathname.startsWith("/api/notes")) {
+        const ref = refFromQuery(url.searchParams);
+        if (!ref) return json(res, 400, { error: "Expected owner, repo and number" });
+        const pr = await loadPr(ref, false);
+        const path = url.searchParams.get("path") ?? "";
+        if (url.pathname === "/api/notes/start" && req.method === "POST") {
+          notes.start(pr);
+          return json(res, 200, notes.status(pr));
+        }
+        if (url.pathname === "/api/notes/status") return json(res, 200, notes.status(pr));
+        if (url.pathname === "/api/notes/retry" && req.method === "POST") {
+          notes.retry(pr, path);
+          return json(res, 200, notes.status(pr));
+        }
+        if (url.pathname === "/api/notes") return json(res, 200, await notes.get(pr, path));
       }
       if (url.pathname.startsWith("/api/")) return json(res, 404, { error: "Not found" });
       await serveStatic(url.pathname, res);

@@ -28,6 +28,7 @@ async function start() {
       reads.push(`${path}@${sha}`);
       return `${path} at ${sha}`;
     },
+    notes: { start() {}, status: () => ({}), get: async () => ({ state: "none" as const }), retry() {} },
     webDir: "/nonexistent",
   });
   server = createServer(app);

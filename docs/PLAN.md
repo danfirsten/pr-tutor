@@ -30,7 +30,7 @@ skills/pr-tutor-review/      Claude Code skill: look over the draft and post it
 
 Considered and dropped for the diff view: `react-diff-view` (MIT, last release March 2026, no highlighting of its own) and hand-rolling Shiki plus our own line model (several hundred lines to get selection and annotations right). `@pierre/diffs` already has both.
 
-Distribution: `npm install -g github:danfirsten/pr-tutor`. A `prepare` script builds the page on install. No npm publish in v1.
+Distribution: clone, `npm install` (its `prepare` script builds), then `npm install -g .`. Installing straight from GitHub with `npm install -g github:…` was tried and fails, because npm doesn't install the build tools for a git dependency. No npm publish in v1.
 
 ## Calling Claude
 

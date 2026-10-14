@@ -15,11 +15,16 @@ Everything runs on your machine. PRs are read with the `gh` CLI, and Claude is r
 ## Install
 
 ```bash
-npm install -g github:danfirsten/pr-tutor
+git clone https://github.com/danfirsten/pr-tutor.git
+cd pr-tutor
+npm install
+npm install -g .
 pr-tutor install-skill
 ```
 
-The second command copies the `pr-tutor-review` skill into `~/.claude/skills/`, so Claude Code can look over and post your reviews.
+`npm install` builds the page, and `npm install -g .` puts `pr-tutor` on your PATH. The last command copies the `pr-tutor-review` skill into `~/.claude/skills/`, so Claude Code can look over and post your reviews.
+
+To update later, run `git pull && npm install && npm install -g .` in the same folder.
 
 ## Use it
 

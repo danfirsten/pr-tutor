@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { refLabel } from "../../server/prRef.ts";
 import { loadMisses, type CategorySummary } from "./api.ts";
 
 export function MissesView() {
@@ -43,7 +44,7 @@ export function MissesView() {
               <ul>
                 {c.latest.map((m) => (
                   <li key={m.at + m.what}>
-                    {m.what} <span className="muted mono">· {m.owner}/{m.repo}#{m.number} {m.path}</span>
+                    {m.what} <span className="muted mono">· {refLabel(m)} {m.path}</span>
                   </li>
                 ))}
               </ul>

@@ -1,11 +1,15 @@
 import type { FileContentsPair, Pr, PrRef, ReviewState } from "../../server/types.ts";
 
 export function prRefFromLocation(): PrRef | null {
-  const [owner, repo, number] = (new URLSearchParams(location.search).get("pr") ?? "").split("/");
+  const params = new URLSearchParams(location.search);
+  const [localOwner, localRepo, ...branch] = (params.get("local") ?? "").split("/");
+  if (localOwner && localRepo && branch.length) return { owner: localOwner, repo: localRepo, number: 0, branch: branch.join("/") };
+  const [owner, repo, number] = (params.get("pr") ?? "").split("/");
   return owner && repo && Number(number) > 0 ? { owner, repo, number: Number(number) } : null;
 }
 
-const query = (ref: PrRef) => `owner=${encodeURIComponent(ref.owner)}&repo=${encodeURIComponent(ref.repo)}&number=${ref.number}`;
+const query = (ref: PrRef) =>
+  `owner=${encodeURIComponent(ref.owner)}&repo=${encodeURIComponent(ref.repo)}&` + (ref.branch ? `branch=${encodeURIComponent(ref.branch)}` : `number=${ref.number}`);
 
 async function request<T>(url: string, init?: RequestInit): Promise<T> {
   const res = await fetch(url, init);
@@ -14,7 +18,7 @@ async function request<T>(url: string, init?: RequestInit): Promise<T> {
   return body as T;
 }
 
-export const loadPr = (ref: PrRef) => request<Pr>(`/api/pr?${query(ref)}`);
+export const loadPr = (ref: PrRef) => request<Pr>(`/api/pr?${query(ref)}${ref.branch ? "&refresh=1" : ""}`);
 
 export const loadFile = (ref: PrRef, path: string) => request<FileContentsPair>(`/api/file?${query(ref)}&path=${encodeURIComponent(path)}`);
 

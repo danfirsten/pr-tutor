@@ -21,11 +21,15 @@ afterEach(() => server?.close());
 
 async function start() {
   const reads: string[] = [];
+  const fetched: string[] = [];
   const app = createApp({
     store: createStore(await mkdtemp(join(tmpdir(), "pr-tutor-"))),
-    fetchPr: async () => pr,
-    fetchFileAt: async (_ref, path, sha) => {
-      reads.push(`${path}@${sha}`);
+    fetchPr: async (ref) => {
+      fetched.push(ref.branch ?? String(ref.number));
+      return ref.branch ? { ...pr, number: 0, branch: ref.branch, local: { dir: "/repo" } } : pr;
+    },
+    fetchFileAt: async (from, path, sha) => {
+      reads.push(`${from.local ? "git" : "gh"}:${path}@${sha}`);
       return `${path} at ${sha}`;
     },
     notes: { start() {}, status: () => ({}), get: async () => ({ state: "none" as const }), retry() {} },
@@ -37,7 +41,7 @@ async function start() {
   server = createServer(app);
   await new Promise<void>((resolve) => server.listen(0, "127.0.0.1", resolve));
   const port = (server.address() as { port: number }).port;
-  return { base: `http://localhost:${port}`, reads };
+  return { base: `http://localhost:${port}`, reads, fetched };
 }
 
 const q = "owner=acme&repo=widgets&number=42";
@@ -47,7 +51,17 @@ describe("app", () => {
     const { base, reads } = await start();
     expect(await (await fetch(`${base}/api/file?${q}&path=src/a.ts`)).json()).toEqual({ old: "src/a.ts at base", new: "src/a.ts at head" });
     expect(await (await fetch(`${base}/api/file?${q}&path=src/new.ts`)).json()).toEqual({ old: null, new: "src/new.ts at head" });
-    expect(reads).not.toContain("src/new.ts@base");
+    expect(reads).not.toContain("gh:src/new.ts@base");
+  });
+
+  it("loads a local branch by name and reads its files through the snapshot", async () => {
+    const { base, reads, fetched } = await start();
+    const local = "owner=acme&repo=widgets&branch=feature%2Fx";
+    expect(await (await fetch(`${base}/api/pr?${local}`)).json()).toMatchObject({ number: 0, branch: "feature/x" });
+    await fetch(`${base}/api/file?${local}&path=src/a.ts`);
+    expect(reads).toContain("git:src/a.ts@head");
+    await fetch(`${base}/api/pr?${q}`);
+    expect(fetched).toEqual(["feature/x", "42"]);
   });
 
   it("won't read a path that isn't in the PR", async () => {

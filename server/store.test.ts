@@ -12,6 +12,13 @@ describe("store", () => {
     expect(createStore(root).reviewDir(ref)).toBe(join(root, "reviews", "acme", "widgets", "42"));
   });
 
+  it("keeps a local review under the branch name, in one folder that can't climb out", async () => {
+    const root = await mkdtemp(join(tmpdir(), "pr-tutor-"));
+    const store = createStore(root);
+    expect(store.reviewDir({ ...ref, number: 0, branch: "feature/x" })).toBe(join(root, "reviews", "acme", "widgets", "local", "feature%2Fx"));
+    expect(store.reviewDir({ ...ref, number: 0, branch: ".." })).toBe(join(root, "reviews", "acme", "widgets", "local", "%2E."));
+  });
+
   it("round-trips JSON and leaves no temp files behind", async () => {
     const root = await mkdtemp(join(tmpdir(), "pr-tutor-"));
     const store = createStore(root);

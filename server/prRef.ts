@@ -11,3 +11,7 @@ export function parsePrRef(input: string): PrRef | null {
   if (number < 1) return null;
   return { owner: match[1], repo: match[2], number };
 }
+
+export function refLabel(ref: PrRef): string {
+  return ref.branch ? `${ref.owner}/${ref.repo}@${ref.branch}` : `${ref.owner}/${ref.repo}#${ref.number}`;
+}

@@ -64,3 +64,19 @@ describe("renderMarkdown", () => {
     expect(md).toContain("This drops the last item.");
   });
 });
+
+describe("a local review", () => {
+  const local = { ...pr, number: 0, branch: "feature/x" } as Pr;
+
+  it("is always a plain comment, since nothing gets posted", () => {
+    const draft = cleanDraft(local, { ...emptyDraft(local), event: "APPROVE" });
+    expect(draft).toMatchObject({ branch: "feature/x", event: "COMMENT" });
+  });
+
+  it("reads as a self-review checklist", () => {
+    const md = renderMarkdown(local, emptyDraft(local));
+    expect(md).toContain("# Self-review of acme/widgets@feature/x: Fix it");
+    expect(md).toContain("Nothing here gets posted.");
+    expect(md).not.toContain("Verdict");
+  });
+});

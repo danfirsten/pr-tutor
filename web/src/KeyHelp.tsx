@@ -17,6 +17,7 @@ const GROUPS: Array<[string, Array<[string, string]>]> = [
       ["⇧↓ / ⇧↑", "Stretch it over several lines"],
       ["c or Enter", "Comment on the cursor line or lines"],
       ["e", "Edit your comment on this line or hunk"],
+      ["a", "Use Claude's concern on this line (or the hunk's first) as a comment"],
       ["] / [", "Next / previous of your comments"],
       ["Esc", "Clear the cursor"],
     ],
@@ -25,7 +26,7 @@ const GROUPS: Array<[string, Array<[string, string]>]> = [
     "Inside a comment",
     [
       ["⌘↵", "Save"],
-      ["Esc", "Cancel"],
+      ["Esc or ⌘.", "Cancel (⌘. keeps you in full screen)"],
       ["⌥1 – ⌥4", "Blocker, suggestion, question, nit"],
       ["⌥C", "Coach this"],
       ["⌥U / ⌥K", "Use the coach's version / keep yours"],

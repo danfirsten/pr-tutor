@@ -43,12 +43,13 @@ Everything works from the keyboard. The main keys:
 | `↓` / `↑` | Move the line cursor (hold `⇧` to cover several lines) |
 | `c` or `Enter` | Comment on the cursor line or lines |
 | `e` | Edit your comment on this line |
+| `a` | Use Claude's concern on this line as a comment |
 | `]` / `[` | Jump to your next / previous comment |
 | `f` | Whole file with the changes inline |
 | `x` | Mark the file reviewed |
 | `b` / `r` / `m` | Briefing / your review / what you tend to miss |
 | `t` | Take first on / off |
-| `?` | Every key, including the ones inside a comment (`⌘↵` save, `⌥1`–`⌥4` label, `⌥C` coach) |
+| `?` | Every key, including the ones inside a comment (`⌘↵` save, `Esc` or `⌘.` cancel, `⌥1`–`⌥4` label, `⌥C` coach) |
 
 You can also click a line number (or drag across several) to comment. Pick a label: **blocker** must change before merging, **suggestion** is the author's call, **question** asks to understand, and **nit** is tiny and optional. Press **Coach this** to have Claude check your comment is right and help you word it.
 

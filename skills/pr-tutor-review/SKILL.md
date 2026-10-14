@@ -1,6 +1,6 @@
 ---
 name: pr-tutor-review
-description: Look over, coach and post a pull request review drafted in pr-tutor. Use when the user says "look over my review of owner/repo#123", "check my pr-tutor review", "post my review of …", or points at a folder under ~/.pr-tutor/reviews/. Reads the saved draft, gives mentor-style feedback on every comment, shows exactly what will be posted, and posts it to GitHub as one review only after the user says yes.
+description: Look over, coach and post a pull request review drafted in pr-tutor. Use when the user says "look over my review of owner/repo#123", "check my pr-tutor review", "post my review of …", or points at a folder under ~/.pr-tutor/reviews/. Reads the saved draft, gives mentor-style feedback on every comment, shows exactly what will be posted, and posts it to GitHub as one review only after the user says yes. Also use on "apply my pr-tutor review": when the PR is the user's own, it turns their comments into code changes instead of posting.
 ---
 
 # pr-tutor review
@@ -25,7 +25,7 @@ gh pr view <number> -R <owner>/<repo> --json state,headRefOid,author,title,url
 
 - If the PR is merged or closed, say so and ask whether to continue.
 - A comment whose `headSha` differs from the current `headRefOid` was written on an older version. Its line may have moved or gone. List these by file and line. Check each one against the current diff (`gh pr diff <number> -R <owner>/<repo>`), and recommend fixing them in pr-tutor or leaving them out. Never post them silently.
-- If the PR's author is the user (`gh api user --jq .login`), GitHub won't accept APPROVE or REQUEST_CHANGES. The event has to be COMMENT.
+- If the PR's author is the user (`gh api user --jq .login`), this is a **self-review**. Skip steps 4 to 6 and go to step 7. Never post a self-review to GitHub.
 
 ## 3. Coach the review
 
@@ -77,3 +77,13 @@ If GitHub rejects it (usually a line that's no longer in the diff, error 422), s
 ## 6. Afterwards
 
 Write `posted.json` next to the draft, holding the review's `id`, `html_url`, the time posted and the `commit_id`. Leave `review.json` where it is. Give the user the review link. Then end with one or two sentences on what they did well and the one habit to focus on next time.
+
+## 7. Self-review: apply it
+
+The user reviewed their own PR to catch problems before anyone else sees it. Treat each comment as a to-do item, not something to post.
+
+- Coach it the same way as step 3, but briefly. If a comment is wrong, say why and leave that code alone.
+- Work through blockers first, then suggestions. Answer questions in chat. Fix nits only if they're quick.
+- Give a short plan (which comment, which file, what change) and wait for a yes before editing.
+- After the edits, run the tests, commit with the repo's commit format and push. Then write `applied.json` next to the draft, listing which comments you fixed, which you skipped and why, and the new head SHA.
+- Finish with one line on the habit the review shows. For example: "you caught two missing null checks, so check for them as you write."

@@ -26,3 +26,14 @@ export interface Pr extends PrRef {
   headRef: string;
   files: PrFile[];
 }
+
+export interface ReviewState {
+  reviewed: string[];
+}
+
+export interface FileContentsPair {
+  old: string | null;
+  new: string | null;
+}
+
+export type NoteState = { state: "none" | "idle" | "queued" | "running" | "done" } | { state: "error"; error: string; login?: boolean };

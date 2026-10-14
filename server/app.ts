@@ -1,13 +1,16 @@
 import { readFile } from "node:fs/promises";
 import type { IncomingMessage, ServerResponse } from "node:http";
 import { extname, join, normalize, sep } from "node:path";
-import type { fetchPr as FetchPr } from "./gh.ts";
+import type { fetchFileAt as FetchFileAt, fetchPr as FetchPr } from "./gh.ts";
 import type { Store } from "./store.ts";
-import type { Pr, PrRef } from "./types.ts";
+import type { createNotes } from "./notes.ts";
+import type { Pr, PrRef, ReviewState } from "./types.ts";
 
 export interface AppDeps {
   store: Store;
   fetchPr: typeof FetchPr;
+  fetchFileAt: typeof FetchFileAt;
+  notes: ReturnType<typeof createNotes>;
   webDir: string;
 }
 
@@ -23,7 +26,7 @@ const TYPES: Record<string, string> = {
 
 const LOCAL_HOST = /^(localhost|127\.0\.0\.1|\[::1\])(:\d+)?$/;
 
-export function createApp({ store, fetchPr, webDir }: AppDeps) {
+export function createApp({ store, fetchPr, fetchFileAt, notes, webDir }: AppDeps) {
   const prs = new Map<string, Pr>();
 
   async function loadPr(ref: PrRef, refresh: boolean): Promise<Pr> {
@@ -34,6 +37,18 @@ export function createApp({ store, fetchPr, webDir }: AppDeps) {
     prs.set(key, pr);
     await store.writeReviewJson(ref, "pr.json", pr);
     return pr;
+  }
+
+  async function loadFile(ref: PrRef, path: string) {
+    const pr = await loadPr(ref, false);
+    const file = pr.files.find((f) => f.path === path);
+    if (!file) return null;
+    const read = (at: string, sha: string) => fetchFileAt(ref, at, sha).catch(() => null);
+    const [oldText, newText] = await Promise.all([
+      file.status === "added" ? null : read(file.previousPath ?? file.path, pr.baseSha),
+      file.status === "removed" ? null : read(file.path, pr.headSha),
+    ]);
+    return { old: oldText, new: newText };
   }
 
   async function serveStatic(pathname: string, res: ServerResponse) {
@@ -50,7 +65,8 @@ export function createApp({ store, fetchPr, webDir }: AppDeps) {
   }
 
   return async function handle(req: IncomingMessage, res: ServerResponse) {
-    if (!LOCAL_HOST.test(req.headers.host ?? "")) {
+    const origin = req.headers.origin;
+    if (!LOCAL_HOST.test(req.headers.host ?? "") || (origin && !LOCAL_HOST.test(origin.replace(/^https?:\/\//, "")))) {
       res.writeHead(403).end("pr-tutor only answers on localhost");
       return;
     }
@@ -61,6 +77,40 @@ export function createApp({ store, fetchPr, webDir }: AppDeps) {
         const ref = refFromQuery(url.searchParams);
         if (!ref) return json(res, 400, { error: "Expected owner, repo and number" });
         return json(res, 200, await loadPr(ref, url.searchParams.has("refresh")));
+      }
+      if (url.pathname === "/api/file") {
+        const ref = refFromQuery(url.searchParams);
+        const path = url.searchParams.get("path");
+        if (!ref || !path) return json(res, 400, { error: "Expected owner, repo, number and path" });
+        const contents = await loadFile(ref, path);
+        return contents ? json(res, 200, contents) : json(res, 404, { error: "That file isn't in this PR" });
+      }
+      if (url.pathname === "/api/state") {
+        const ref = refFromQuery(url.searchParams);
+        if (!ref) return json(res, 400, { error: "Expected owner, repo and number" });
+        if (req.method === "PUT") {
+          const state = (await readBody(req)) as Partial<ReviewState>;
+          const reviewed = Array.isArray(state.reviewed) ? state.reviewed.filter((p) => typeof p === "string") : [];
+          await store.writeReviewJson(ref, "state.json", { reviewed });
+          return json(res, 200, { ok: true });
+        }
+        return json(res, 200, (await store.readReviewJson<ReviewState>(ref, "state.json")) ?? { reviewed: [] });
+      }
+      if (url.pathname.startsWith("/api/notes")) {
+        const ref = refFromQuery(url.searchParams);
+        if (!ref) return json(res, 400, { error: "Expected owner, repo and number" });
+        const pr = await loadPr(ref, false);
+        const path = url.searchParams.get("path") ?? "";
+        if (url.pathname === "/api/notes/start" && req.method === "POST") {
+          notes.start(pr);
+          return json(res, 200, notes.status(pr));
+        }
+        if (url.pathname === "/api/notes/status") return json(res, 200, notes.status(pr));
+        if (url.pathname === "/api/notes/retry" && req.method === "POST") {
+          notes.retry(pr, path);
+          return json(res, 200, notes.status(pr));
+        }
+        if (url.pathname === "/api/notes") return json(res, 200, await notes.get(pr, path));
       }
       if (url.pathname.startsWith("/api/")) return json(res, 404, { error: "Not found" });
       await serveStatic(url.pathname, res);
@@ -75,6 +125,12 @@ function refFromQuery(q: URLSearchParams): PrRef | null {
   const repo = q.get("repo");
   const number = Number(q.get("number"));
   return owner && repo && number > 0 ? { owner, repo, number } : null;
+}
+
+async function readBody(req: IncomingMessage): Promise<unknown> {
+  const chunks: Buffer[] = [];
+  for await (const chunk of req) chunks.push(chunk as Buffer);
+  return JSON.parse(Buffer.concat(chunks).toString("utf8"));
 }
 
 function json(res: ServerResponse, status: number, body: unknown) {

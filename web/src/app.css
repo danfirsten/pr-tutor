@@ -30,7 +30,7 @@ code, .mono { font-family: var(--mono); }
 .files { border-right: 1px solid var(--line); overflow: auto; padding: var(--space-4) 0; }
 .files .label { padding: 0 var(--space-6) var(--space-2); }
 .file {
-  display: grid; grid-template-columns: 1fr auto; gap: var(--space-2); width: 100%;
+  display: grid; grid-template-columns: 1ch minmax(0, 1fr) auto; gap: var(--space-2); width: 100%;
   padding: 6px var(--space-6); border: 0; background: none; text-align: left; cursor: pointer;
   font: 12.5px/1.4 var(--mono); color: var(--body);
 }
@@ -57,4 +57,71 @@ code, .mono { font-family: var(--mono); }
 
 @media (prefers-reduced-motion: reduce) {
   * { transition: none !important; }
+}
+
+.pill.solid { background: var(--fg); border-color: var(--fg); }
+.pill.solid .label { color: var(--bg); }
+.file .tick { display: inline-block; width: 1ch; color: var(--mute); }
+.file[aria-current="true"] .tick { color: var(--fg); }
+
+.filebar { display: flex; align-items: center; gap: var(--space-3); margin-bottom: var(--space-4); flex-wrap: wrap; }
+.filebar .path { font-size: 14px; color: var(--fg); word-break: break-all; }
+.filebar .spacer { flex: 1; }
+
+.diff {
+  border: 1px solid var(--surface-line); border-radius: var(--radius-media); overflow: hidden;
+  --diffs-font-family: var(--mono);
+  --diffs-header-font-family: var(--mono);
+}
+.empty { color: var(--mute); padding: var(--space-6) 0; }
+.nav { display: flex; justify-content: space-between; margin-top: var(--space-4); }
+
+.hint { color: var(--mute); margin-top: var(--space-6); }
+kbd { font: 12px var(--mono); padding: 1px 6px; border-radius: 6px; background: var(--well); color: var(--fg); }
+
+.overlay { position: fixed; inset: 0; display: grid; place-items: center; background: color-mix(in srgb, var(--bg) 70%, transparent); }
+.card { background: var(--surface); border: 1px solid var(--surface-line); border-radius: var(--radius-card); padding: var(--space-6); min-width: 320px; }
+.card table { border-collapse: collapse; width: 100%; margin-top: var(--space-3); }
+.card td { padding: var(--space-2) var(--space-3) var(--space-2) 0; border-top: 1px solid var(--line); }
+.card td.mono { color: var(--fg); white-space: nowrap; }
+
+.body.with-notes { grid-template-columns: 280px minmax(0, 1fr) 360px; }
+.notes { border-left: 1px solid var(--line); overflow: auto; padding: var(--space-6); display: flex; flex-direction: column; gap: var(--space-4); }
+.notes h3 { font-size: 13px; font-weight: 600; letter-spacing: -0.01em; color: var(--fg); margin: 0 0 var(--space-1); }
+.notes p { margin: 0; }
+.notes ul { margin: 0; padding-left: 18px; }
+.notes li + li { margin-top: var(--space-2); }
+.notes section + section { margin-top: var(--space-2); }
+.notes .concept { background: var(--surface); border: 1px solid var(--surface-line); border-radius: var(--radius-card); padding: var(--space-4); }
+.notes .concept .label { margin-bottom: var(--space-2); }
+.notes .fine { margin-top: auto; font-size: 12px; color: var(--mute); }
+.concerns { list-style: none; padding: 0 !important; }
+.concerns li { border-top: 1px solid var(--line); padding-top: var(--space-3); }
+.concern-head { display: flex; align-items: center; gap: var(--space-2); margin-bottom: var(--space-1); }
+.muted { color: var(--mute); }
+.notice { display: flex; flex-direction: column; gap: var(--space-3); align-items: flex-start; }
+
+.status {
+  display: inline-flex; align-items: center; gap: 6px; padding: 2px 10px; border-radius: var(--radius-pill);
+  background: var(--well); color: var(--fg); font: 500 11px/1.6 var(--mono); letter-spacing: 0.06em; text-transform: uppercase; white-space: nowrap;
+}
+.status .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--mute); }
+.status.blocker .dot { background: var(--crit); }
+.status.should-fix .dot { background: var(--warn); }
+
+.inline-concern { display: flex; align-items: baseline; gap: var(--space-2); padding: 6px var(--space-3); font: 13px/1.45 var(--sans); background: var(--well); color: var(--fg); }
+.glyph { font-size: 11px; }
+.pulse { animation: pulse 1.6s ease-in-out infinite; }
+@keyframes pulse { 50% { opacity: 0.6; } }
+
+@media (max-width: 1200px) {
+  .body.with-notes { grid-template-columns: 240px minmax(0, 1fr) 300px; }
+}
+@media (max-width: 900px) {
+  .body.with-notes { grid-template-columns: minmax(0, 1fr); grid-template-rows: auto auto auto; overflow: auto; }
+  .notes { border-left: 0; border-top: 1px solid var(--line); overflow: visible; }
+  .body.with-notes .main { overflow: visible; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .pulse { animation: none; }
 }

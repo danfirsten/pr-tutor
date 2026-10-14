@@ -2,13 +2,16 @@
 import { execFile } from "node:child_process";
 import { existsSync } from "node:fs";
 import { createServer } from "node:http";
+import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { createApp } from "./app.ts";
-import { fetchPr } from "./gh.ts";
+import { fetchFileAt, fetchPr } from "./gh.ts";
 import { parsePrRef } from "./prRef.ts";
 import { run } from "./run.ts";
-import { createStore } from "./store.ts";
+import { createClaude } from "./claude.ts";
+import { createNotes } from "./notes.ts";
+import { createStore, readJson } from "./store.ts";
 
 const FIRST_PORT = Number(process.env.PR_TUTOR_PORT ?? 4517);
 const here = dirname(fileURLToPath(import.meta.url));
@@ -31,7 +34,11 @@ async function main() {
     process.exit(1);
   }
 
-  const port = await listen(createApp({ store: createStore(), fetchPr, webDir }));
+  const store = createStore();
+  const settings = (await readJson<{ model?: string }>(join(store.root, "settings.json"))) ?? {};
+  const claude = createClaude({ cwd: tmpdir(), model: settings.model });
+  const notes = createNotes({ claude, store, readNewFile: (pr, file) => fetchFileAt(pr, file.path, pr.headSha) });
+  const port = await listen(createApp({ store, fetchPr, fetchFileAt, notes, webDir }));
   const url = `http://localhost:${port}/?pr=${ref.owner}/${ref.repo}/${ref.number}`;
   console.log(`pr-tutor: ${url}`);
   if (!process.argv.includes("--no-open")) openBrowser(url);

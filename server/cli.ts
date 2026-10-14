@@ -2,7 +2,8 @@
 import { execFile } from "node:child_process";
 import { existsSync } from "node:fs";
 import { createServer } from "node:http";
-import { tmpdir } from "node:os";
+import { cp } from "node:fs/promises";
+import { homedir, tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { createApp } from "./app.ts";
@@ -12,16 +13,26 @@ import { run } from "./run.ts";
 import { createClaude } from "./claude.ts";
 import { createNotes } from "./notes.ts";
 import { createBriefings } from "./briefing.ts";
+import { coach } from "./coach.ts";
 import { createStore, readJson } from "./store.ts";
 
 const FIRST_PORT = Number(process.env.PR_TUTOR_PORT ?? 4517);
 const here = dirname(fileURLToPath(import.meta.url));
 const webDir = [join(here, "..", "dist", "web"), join(here, "..", "web")].find((dir) => existsSync(join(dir, "index.html")));
 
+async function installSkill() {
+  const from = [join(here, "..", "skills"), join(here, "..", "..", "skills")].find((dir) => existsSync(dir));
+  if (!from) throw new Error("Couldn't find the skills folder next to pr-tutor.");
+  const to = join(homedir(), ".claude", "skills");
+  await cp(from, to, { recursive: true });
+  console.log(`Installed the pr-tutor-review skill to ${join(to, "pr-tutor-review")}.\nIn Claude Code, say "look over my review of owner/repo#123".`);
+}
+
 async function main() {
+  if (process.argv[2] === "install-skill") return installSkill();
   const ref = parsePrRef(process.argv[2] ?? "");
   if (!ref) {
-    console.error("Usage: pr-tutor <https://github.com/owner/repo/pull/123 | owner/repo#123>");
+    console.error("Usage: pr-tutor <https://github.com/owner/repo/pull/123 | owner/repo#123>\n       pr-tutor install-skill");
     process.exit(1);
   }
   if (!webDir) {
@@ -40,7 +51,7 @@ async function main() {
   const claude = createClaude({ cwd: tmpdir(), model: settings.model });
   const notes = createNotes({ claude, store, readNewFile: (pr, file) => fetchFileAt(pr, file.path, pr.headSha) });
   const briefings = createBriefings({ claude, store });
-  const port = await listen(createApp({ store, fetchPr, fetchFileAt, notes, briefings, webDir }));
+  const port = await listen(createApp({ store, fetchPr, fetchFileAt, notes, briefings, coach: (pr, comment) => coach(claude, pr, comment), webDir }));
   const url = `http://localhost:${port}/?pr=${ref.owner}/${ref.repo}/${ref.number}`;
   console.log(`pr-tutor: ${url}`);
   if (!process.argv.includes("--no-open")) openBrowser(url);

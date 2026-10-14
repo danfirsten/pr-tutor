@@ -30,6 +30,7 @@ async function start() {
     },
     notes: { start() {}, status: () => ({}), get: async () => ({ state: "none" as const }), retry() {} },
     briefings: { get: async () => ({ state: "none" as const }) },
+    coach: async () => ({ rewrite: "", label: "nit" as const, tips: [], accurate: "yes" as const, accuracyNote: "" }),
     webDir: "/nonexistent",
   });
   server = createServer(app);

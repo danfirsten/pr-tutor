@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { splitHunks, type PatchHunk } from "../../server/patch.ts";
+import { hunkFor, splitHunks } from "../../server/patch.ts";
 import { isNoise } from "../../server/noise.ts";
 import type { Pr, PrFile } from "../../server/types.ts";
 import type { Briefing } from "./api.ts";
@@ -94,11 +94,10 @@ function Review({ pr }: { pr: Pr }) {
   const openComment = (c: DraftComment) => {
     const fileHunks = hunksByPath.get(c.path);
     if (!fileHunks) return;
-    const contains = (h: PatchHunk) => (c.side === "LEFT" ? h.oldStart <= c.line && c.line < h.oldStart + h.oldLines : h.newStart <= c.line && c.line < h.newStart + h.newLines);
     setPath(c.path);
     setFullFile(false);
     setEditing(null);
-    setHunkIndex(Math.max(0, fileHunks.findIndex(contains)));
+    setHunkIndex(hunkFor(fileHunks, c)?.index ?? 0);
   };
 
   useEffect(() => {
@@ -232,6 +231,7 @@ function Review({ pr }: { pr: Pr }) {
               {editing && editing.path === file.path && (
                 <Composer
                   key={editing.id}
+                  prRef={pr}
                   comment={editing}
                   onSave={(c) => {
                     review.upsertComment(c);

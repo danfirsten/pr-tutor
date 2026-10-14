@@ -47,3 +47,10 @@ import type { Draft } from "../../server/review.ts";
 export const loadReview = (ref: PrRef) => request<Draft>(`/api/review?${query(ref)}`);
 export const saveReview = (ref: PrRef, draft: Draft) =>
   request<Draft>(`/api/review?${query(ref)}`, { method: "PUT", headers: { "content-type": "application/json" }, body: JSON.stringify(draft) });
+
+export type { Coaching } from "../../server/prompts/coach.ts";
+import type { Coaching } from "../../server/prompts/coach.ts";
+import type { DraftComment as Comment } from "../../server/review.ts";
+
+export const coachComment = (ref: PrRef, comment: Comment) =>
+  request<Coaching>(`/api/coach?${query(ref)}`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(comment) });

@@ -171,3 +171,9 @@ kbd { font: 12px var(--mono); padding: 1px 6px; border-radius: 6px; background: 
 .review .concerns p { margin: 0; white-space: pre-wrap; }
 .code { font: 13px/1.6 var(--mono) !important; background: var(--surface); border: 1px solid var(--surface-line); border-radius: var(--radius-media); padding: var(--space-3); overflow-x: auto; white-space: pre !important; margin: var(--space-2) 0 !important; }
 .warn-text { color: var(--warn); margin-top: var(--space-2) !important; }
+.coach { display: flex; flex-direction: column; gap: var(--space-3); border-top: 1px solid var(--line); padding-top: var(--space-3); }
+.coach p { margin: 0; }
+.coach ul { margin: 0; padding-left: 18px; }
+.coach .suggested { display: flex; flex-direction: column; gap: var(--space-2); background: var(--bg); border: 1px solid var(--surface-line); border-radius: var(--radius-media); padding: var(--space-3); white-space: pre-wrap; color: var(--fg); }
+.coach .suggested .status { align-self: flex-start; }
+.status.ok .dot { background: var(--ok); }

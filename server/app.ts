@@ -5,6 +5,7 @@ import type { fetchFileAt as FetchFileAt, fetchPr as FetchPr } from "./gh.ts";
 import type { Store } from "./store.ts";
 import type { createNotes } from "./notes.ts";
 import type { createBriefings } from "./briefing.ts";
+import { cleanDraft, emptyDraft, renderMarkdown, type Draft } from "./review.ts";
 import type { Pr, PrRef, ReviewState } from "./types.ts";
 
 export interface AppDeps {
@@ -97,6 +98,18 @@ export function createApp({ store, fetchPr, fetchFileAt, notes, briefings, webDi
           return json(res, 200, { ok: true });
         }
         return json(res, 200, (await store.readReviewJson<ReviewState>(ref, "state.json")) ?? { reviewed: [] });
+      }
+      if (url.pathname === "/api/review") {
+        const ref = refFromQuery(url.searchParams);
+        if (!ref) return json(res, 400, { error: "Expected owner, repo and number" });
+        const pr = await loadPr(ref, false);
+        if (req.method === "PUT") {
+          const draft = cleanDraft(pr, (await readBody(req)) as Draft);
+          await store.writeReviewJson(ref, "review.json", draft);
+          await store.writeReviewText(ref, "review.md", renderMarkdown(pr, draft));
+          return json(res, 200, draft);
+        }
+        return json(res, 200, (await store.readReviewJson<Draft>(ref, "review.json")) ?? emptyDraft(pr));
       }
       if (url.pathname === "/api/briefing") {
         const ref = refFromQuery(url.searchParams);

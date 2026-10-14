@@ -13,6 +13,7 @@ export function createStore(root = join(homedir(), ".pr-tutor")) {
     reviewDir,
     readReviewJson: <T>(ref: PrRef, name: string) => readJson<T>(join(reviewDir(ref), name)),
     writeReviewJson: (ref: PrRef, name: string, value: unknown) => writeJson(join(reviewDir(ref), name), value),
+    writeReviewText: (ref: PrRef, name: string, text: string) => writeText(join(reviewDir(ref), name), text),
   };
 }
 
@@ -26,8 +27,14 @@ export async function readJson<T>(path: string): Promise<T | null> {
 }
 
 export async function writeJson(path: string, value: unknown): Promise<void> {
+  await writeText(path, JSON.stringify(value, null, 2) + "\n");
+}
+
+let writes = 0;
+
+export async function writeText(path: string, text: string): Promise<void> {
   await mkdir(dirname(path), { recursive: true });
-  const temp = `${path}.${process.pid}.${Date.now()}.tmp`;
-  await writeFile(temp, JSON.stringify(value, null, 2) + "\n");
+  const temp = `${path}.${process.pid}.${++writes}.tmp`;
+  await writeFile(temp, text);
   await rename(temp, path);
 }

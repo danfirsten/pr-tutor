@@ -1,10 +1,15 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { splitHunks } from "../../server/patch.ts";
+import { splitHunks, type PatchHunk } from "../../server/patch.ts";
 import { isNoise } from "../../server/noise.ts";
 import type { Pr, PrFile } from "../../server/types.ts";
 import type { Briefing } from "./api.ts";
 import { BriefingView } from "./BriefingView.tsx";
 import { useBriefing } from "./useBriefing.ts";
+import type { SelectedLineRange } from "@pierre/diffs";
+import type { DraftComment } from "./api.ts";
+import { Composer } from "./Composer.tsx";
+import { ReviewView } from "./ReviewView.tsx";
+import { useReview } from "./useReview.ts";
 import { loadPr, loadState, prRefFromLocation, saveState } from "./api.ts";
 import { DiffPanel } from "./DiffPanel.tsx";
 import { KeyHelp } from "./KeyHelp.tsx";
@@ -50,6 +55,9 @@ function Review({ pr }: { pr: Pr }) {
   const { theme, cycle } = useTheme();
   const briefing = useBriefing(pr);
   const [path, setPath] = useState<string | null>(null);
+  const [view, setView] = useState<"briefing" | "review">("briefing");
+  const review = useReview(pr);
+  const [editing, setEditing] = useState<DraftComment | null>(null);
   const [hunkIndex, setHunkIndex] = useState(0);
   const [fullFile, setFullFile] = useState(false);
   const [help, setHelp] = useState(false);
@@ -65,6 +73,33 @@ function Review({ pr }: { pr: Pr }) {
   const hunks = file ? hunksByPath.get(file.path)! : [];
   const notes = useNotes(pr, file?.path ?? null);
   const concerns = (notes.notes?.hunks ?? []).filter((h) => fullFile || h.hunkIndex === hunkIndex).flatMap((h) => h.concerns);
+  const fileComments = (review.draft?.comments ?? []).filter((c) => c.path === file?.path && c.id !== editing?.id);
+
+  const startComment = (range: SelectedLineRange | null) => {
+    if (!range || !file) return;
+    const side = (s: string | undefined) => (s === "deletions" ? ("LEFT" as const) : ("RIGHT" as const));
+    const [first, last] = range.start <= range.end ? [range.start, range.end] : [range.end, range.start];
+    setEditing({
+      id: crypto.randomUUID(),
+      path: file.path,
+      line: last,
+      side: side(range.endSide ?? range.side),
+      ...(first !== last ? { start_line: first, start_side: side(range.side) } : {}),
+      label: "suggestion",
+      body: "",
+      headSha: pr.headSha,
+    });
+  };
+
+  const openComment = (c: DraftComment) => {
+    const fileHunks = hunksByPath.get(c.path);
+    if (!fileHunks) return;
+    const contains = (h: PatchHunk) => (c.side === "LEFT" ? h.oldStart <= c.line && c.line < h.oldStart + h.oldLines : h.newStart <= c.line && c.line < h.newStart + h.newLines);
+    setPath(c.path);
+    setFullFile(false);
+    setEditing(null);
+    setHunkIndex(Math.max(0, fileHunks.findIndex(contains)));
+  };
 
   useEffect(() => {
     loadState(pr).then((s) => setReviewed(new Set(s.reviewed)), () => {});
@@ -75,6 +110,7 @@ function Review({ pr }: { pr: Pr }) {
       const clamped = Math.max(-1, Math.min(ordered.length - 1, index));
       const target = clamped === -1 ? null : ordered[clamped];
       setPath(target?.path ?? null);
+      setEditing(null);
       setHunkIndex(atEnd && target ? Math.max(0, hunksByPath.get(target.path)!.length - 1) : 0);
     },
     [ordered, hunksByPath],
@@ -144,12 +180,17 @@ function Review({ pr }: { pr: Pr }) {
       </header>
       <div className={file ? "body with-notes" : "body"}>
         <nav className="files" aria-label="Changed files">
-          <button className="file" aria-current={path === null} onClick={() => goToFile(-1)}>
+          <button className="file" aria-current={path === null && view === "briefing"} onClick={() => (goToFile(-1), setView("briefing"))}>
             <span className="tick" />
             <span className="name">Briefing</span>
             <span className="counts">
               <NoteGlyph state={briefing.state} />
             </span>
+          </button>
+          <button className="file" aria-current={path === null && view === "review"} onClick={() => (goToFile(-1), setView("review"))}>
+            <span className="tick" />
+            <span className="name">Your review</span>
+            <span className="counts">{review.draft?.comments.length ?? 0}</span>
           </button>
           <div className="label group">Read · {read.length}</div>
           {read.map(fileButton)}
@@ -175,7 +216,31 @@ function Review({ pr }: { pr: Pr }) {
                   <span className="label">{reviewed.has(file.path) ? "Reviewed ✓" : "Mark reviewed"} · x</span>
                 </button>
               </div>
-              <DiffPanel prRef={pr} file={file} hunks={hunks} hunkIndex={hunkIndex} fullFile={fullFile} theme={theme} concerns={concerns} />
+              <DiffPanel
+                prRef={pr}
+                file={file}
+                hunks={hunks}
+                hunkIndex={hunkIndex}
+                fullFile={fullFile}
+                theme={theme}
+                concerns={concerns}
+                comments={fileComments}
+                selected={editing}
+                onSelect={startComment}
+                onEdit={setEditing}
+              />
+              {editing && editing.path === file.path && (
+                <Composer
+                  key={editing.id}
+                  comment={editing}
+                  onSave={(c) => {
+                    review.upsertComment(c);
+                    setEditing(null);
+                  }}
+                  onCancel={() => setEditing(null)}
+                  onDelete={review.draft?.comments.some((c) => c.id === editing.id) ? () => (review.deleteComment(editing.id), setEditing(null)) : undefined}
+                />
+              )}
               <div className="nav">
                 <button className="pill" onClick={prevHunk}>
                   <span className="label">← Previous · k</span>
@@ -186,7 +251,11 @@ function Review({ pr }: { pr: Pr }) {
               </div>
             </>
           ) : (
-            <BriefingView pr={pr} result={briefing} onOpen={open} onRetry={briefing.retry} />
+            view === "review" && review.draft ? (
+              <ReviewView pr={pr} draft={review.draft} saveState={review.saveState} onChange={review.update} onOpen={openComment} />
+            ) : (
+              <BriefingView pr={pr} result={briefing} onOpen={open} onRetry={briefing.retry} />
+            )
           )}
         </main>
         {file && <NotesPanel state={notes.state} notes={notes.notes} hunkIndex={hunkIndex} fullFile={fullFile} onRetry={() => notes.retry(file.path)} />}

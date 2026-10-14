@@ -40,3 +40,10 @@ import type { Briefing } from "../../server/prompts/briefing.ts";
 
 export type BriefingResult = NoteState & { briefing?: Briefing };
 export const loadBriefing = (ref: PrRef, retry = false) => request<BriefingResult>(`/api/briefing?${query(ref)}${retry ? "&retry=1" : ""}`);
+
+export type { Draft, DraftComment, Label, Side } from "../../server/review.ts";
+import type { Draft } from "../../server/review.ts";
+
+export const loadReview = (ref: PrRef) => request<Draft>(`/api/review?${query(ref)}`);
+export const saveReview = (ref: PrRef, draft: Draft) =>
+  request<Draft>(`/api/review?${query(ref)}`, { method: "PUT", headers: { "content-type": "application/json" }, body: JSON.stringify(draft) });

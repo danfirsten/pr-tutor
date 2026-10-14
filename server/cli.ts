@@ -5,7 +5,7 @@ import { createServer } from "node:http";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { createApp } from "./app.ts";
-import { fetchPr } from "./gh.ts";
+import { fetchFileAt, fetchPr } from "./gh.ts";
 import { parsePrRef } from "./prRef.ts";
 import { run } from "./run.ts";
 import { createStore } from "./store.ts";
@@ -31,7 +31,7 @@ async function main() {
     process.exit(1);
   }
 
-  const port = await listen(createApp({ store: createStore(), fetchPr, webDir }));
+  const port = await listen(createApp({ store: createStore(), fetchPr, fetchFileAt, webDir }));
   const url = `http://localhost:${port}/?pr=${ref.owner}/${ref.repo}/${ref.number}`;
   console.log(`pr-tutor: ${url}`);
   if (!process.argv.includes("--no-open")) openBrowser(url);

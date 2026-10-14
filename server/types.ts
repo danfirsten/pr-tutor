@@ -26,3 +26,12 @@ export interface Pr extends PrRef {
   headRef: string;
   files: PrFile[];
 }
+
+export interface ReviewState {
+  reviewed: string[];
+}
+
+export interface FileContentsPair {
+  old: string | null;
+  new: string | null;
+}

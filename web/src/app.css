@@ -30,7 +30,7 @@ code, .mono { font-family: var(--mono); }
 .files { border-right: 1px solid var(--line); overflow: auto; padding: var(--space-4) 0; }
 .files .label { padding: 0 var(--space-6) var(--space-2); }
 .file {
-  display: grid; grid-template-columns: 1fr auto; gap: var(--space-2); width: 100%;
+  display: grid; grid-template-columns: 1ch minmax(0, 1fr) auto; gap: var(--space-2); width: 100%;
   padding: 6px var(--space-6); border: 0; background: none; text-align: left; cursor: pointer;
   font: 12.5px/1.4 var(--mono); color: var(--body);
 }
@@ -58,3 +58,29 @@ code, .mono { font-family: var(--mono); }
 @media (prefers-reduced-motion: reduce) {
   * { transition: none !important; }
 }
+
+.pill.solid { background: var(--fg); border-color: var(--fg); }
+.pill.solid .label { color: var(--bg); }
+.file .tick { display: inline-block; width: 1ch; color: var(--mute); }
+.file[aria-current="true"] .tick { color: var(--fg); }
+
+.filebar { display: flex; align-items: center; gap: var(--space-3); margin-bottom: var(--space-4); flex-wrap: wrap; }
+.filebar .path { font-size: 14px; color: var(--fg); word-break: break-all; }
+.filebar .spacer { flex: 1; }
+
+.diff {
+  border: 1px solid var(--surface-line); border-radius: var(--radius-media); overflow: hidden;
+  --diffs-font-family: var(--mono);
+  --diffs-header-font-family: var(--mono);
+}
+.empty { color: var(--mute); padding: var(--space-6) 0; }
+.nav { display: flex; justify-content: space-between; margin-top: var(--space-4); }
+
+.hint { color: var(--mute); margin-top: var(--space-6); }
+kbd { font: 12px var(--mono); padding: 1px 6px; border-radius: 6px; background: var(--well); color: var(--fg); }
+
+.overlay { position: fixed; inset: 0; display: grid; place-items: center; background: color-mix(in srgb, var(--bg) 70%, transparent); }
+.card { background: var(--surface); border: 1px solid var(--surface-line); border-radius: var(--radius-card); padding: var(--space-6); min-width: 320px; }
+.card table { border-collapse: collapse; width: 100%; margin-top: var(--space-3); }
+.card td { padding: var(--space-2) var(--space-3) var(--space-2) 0; border-top: 1px solid var(--line); }
+.card td.mono { color: var(--fg); white-space: nowrap; }

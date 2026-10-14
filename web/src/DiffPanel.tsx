@@ -21,9 +21,10 @@ interface Props {
   selected: SelectedLineRange | null;
   onSelect: (range: SelectedLineRange | null) => void;
   onEdit: (comment: DraftComment) => void;
+  onUseConcern: (concern: Concern) => void;
 }
 
-export function DiffPanel({ prRef, file, hunks, hunkIndex, fullFile, theme, concerns, comments, selected, onSelect, onEdit }: Props) {
+export function DiffPanel({ prRef, file, hunks, hunkIndex, fullFile, theme, concerns, comments, selected, onSelect, onEdit, onUseConcern }: Props) {
   const wrapper = useRef<HTMLDivElement>(null);
   const current = useRef(selected);
   current.current = selected;
@@ -58,7 +59,12 @@ export function DiffPanel({ prRef, file, hunks, hunkIndex, fullFile, theme, conc
     metadata.kind === "concern" ? (
       <div className="inline-concern">
         <SeverityPill severity={metadata.concern.severity} />
-        <span>{metadata.concern.text}</span>
+        <span className="text">{metadata.concern.text}</span>
+        {!fullFile && (
+          <button className="textbtn" onClick={() => onUseConcern(metadata.concern)}>
+            Use as comment · a
+          </button>
+        )}
       </div>
     ) : (
       <div className="inline-comment">

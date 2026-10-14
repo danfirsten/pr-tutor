@@ -110,6 +110,9 @@ kbd { font: 12px var(--mono); padding: 1px 6px; border-radius: 6px; background: 
 .status.should-fix .dot { background: var(--warn); }
 
 .inline-concern { display: flex; align-items: baseline; gap: var(--space-2); padding: 6px var(--space-3); font: 13px/1.45 var(--sans); background: var(--well); color: var(--fg); }
+.inline-concern { flex-wrap: wrap; }
+.inline-concern .text { flex: 1 1 18em; min-width: 0; }
+.inline-concern .textbtn { margin-left: auto; white-space: nowrap; }
 .glyph { font-size: 11px; }
 .pulse { animation: pulse 1.6s ease-in-out infinite; }
 @keyframes pulse { 50% { opacity: 0.6; } }

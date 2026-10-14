@@ -68,7 +68,10 @@ export function Composer({ prRef, comment, onSave, onCancel, onDelete }: Props) 
         onChange={(e) => setBody(e.target.value)}
         onKeyDown={(e) => {
           if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) save();
-          if (e.key === "Escape") onCancel();
+          if (e.key === "Escape" || (e.key === "." && (e.metaKey || e.ctrlKey))) {
+            e.preventDefault();
+            onCancel();
+          }
           if (!e.altKey) return;
           const digit = /^Digit([1-4])$/.exec(e.code);
           const action = digit
@@ -89,7 +92,7 @@ export function Composer({ prRef, comment, onSave, onCancel, onDelete }: Props) 
           <span className="label">Save · ⌘↵</span>
         </button>
         <button className="pill" onClick={onCancel}>
-          <span className="label">Cancel · Esc</span>
+          <span className="label">Cancel · Esc or ⌘.</span>
         </button>
         <button className="pill" onClick={askCoach} disabled={!body.trim() || coach.kind === "busy"} title="Claude suggests a clearer, kinder version and explains why">
           <span className="label">{coach.kind === "busy" ? "Coaching…" : "Coach this · ⌥C"}</span>

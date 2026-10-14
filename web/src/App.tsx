@@ -6,6 +6,7 @@ import type { Pr, PrFile } from "../../server/types.ts";
 import { loadPr, loadSettings, loadState, loadTakes, prRefFromLocation, saveSettings, saveState, submitTake, type Briefing, type DraftComment, type Take } from "./api.ts";
 import { BriefingView } from "./BriefingView.tsx";
 import { Composer } from "./Composer.tsx";
+import { commentFromConcern, concernAt } from "./concernComment.ts";
 import { DiffPanel } from "./DiffPanel.tsx";
 import { KeyHelp } from "./KeyHelp.tsx";
 import { MissesView } from "./MissesView.tsx";
@@ -131,6 +132,14 @@ function Review({ pr }: { pr: Pr }) {
     setEditing(newComment(file.path, rows[a], rows[b], pr.headSha));
   };
 
+  const adoptConcern = (concern = concernAt(concerns, cursor ? rows[cursor.at] : null)) => {
+    if (!file || !concern || gated || fullFile) return;
+    const comment = commentFromConcern(concern, file.path, pr.headSha);
+    const at = rows.findIndex((r) => r.line === comment.line && r.side === comment.side);
+    if (at >= 0) setCursor({ at, anchor: at });
+    setEditing(comment);
+  };
+
   const editAtCursor = () => {
     const inHunk = fileComments.filter((c) => hunkFor(hunks, c)?.index === hunkIndex);
     const row = cursor ? rows[cursor.at] : null;
@@ -233,6 +242,7 @@ function Review({ pr }: { pr: Pr }) {
     c: commentAtCursor,
     Enter: commentAtCursor,
     e: editAtCursor,
+    a: () => adoptConcern(),
     "]": () => jumpComment(1),
     "[": () => jumpComment(-1),
     f: () => file && setFullFile((v) => !v),
@@ -348,6 +358,7 @@ function Review({ pr }: { pr: Pr }) {
                 selected={editing ? commentRange(editing) : cursorRange}
                 onSelect={startComment}
                 onEdit={setEditing}
+                onUseConcern={adoptConcern}
               />
               {editing && editing.path === file.path && (
                 <Composer

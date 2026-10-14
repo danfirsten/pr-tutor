@@ -1,0 +1,17 @@
+{
+  "compilerOptions": {
+    "target": "es2023",
+    "module": "nodenext",
+    "moduleResolution": "nodenext",
+    "rewriteRelativeImportExtensions": true,
+    "erasableSyntaxOnly": true,
+    "verbatimModuleSyntax": true,
+    "strict": true,
+    "skipLibCheck": true,
+    "outDir": "dist/server",
+    "rootDir": "server",
+    "types": ["node"]
+  },
+  "include": ["server"],
+  "exclude": ["server/**/*.test.ts"]
+}

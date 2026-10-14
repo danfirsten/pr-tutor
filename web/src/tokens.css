@@ -1,0 +1,64 @@
+/* Ink & Paper */
+:root {
+  --bg: #f7f7f4;
+  --surface: #ffffff;
+  --surface-line: #e4e4df;
+  --fg: #0b0b0b;
+  --body: #0b0b0b;
+  --mute: #5e5e5a;
+  --line: #e4e4df;
+  --well: #e9e9e4;
+  --ok: #1e6b45;
+  --warn: #8a5a00;
+  --crit: #a8261b;
+
+  --sans: Geist, system-ui, sans-serif;
+  --mono: "Geist Mono", ui-monospace, monospace;
+
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-6: 24px;
+  --space-12: 48px;
+
+  --radius-media: 12px;
+  --radius-card: 16px;
+  --radius-pill: 999px;
+
+  --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+  --ease-drawer: cubic-bezier(0.32, 0.72, 0, 1);
+  color-scheme: light;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0b0b0b;
+    --surface: #161616;
+    --surface-line: #242424;
+    --fg: #f2f2ee;
+    --body: #b4b4af;
+    --mute: #8f8f8a;
+    --line: #262626;
+    --well: #1c1c1c;
+    --ok: #5bc48c;
+    --warn: #e0b04a;
+    --crit: #f47a6e;
+    color-scheme: dark;
+  }
+}
+
+:root[data-theme="dark"] {
+  --bg: #0b0b0b;
+  --surface: #161616;
+  --surface-line: #242424;
+  --fg: #f2f2ee;
+  --body: #b4b4af;
+  --mute: #8f8f8a;
+  --line: #262626;
+  --well: #1c1c1c;
+  --ok: #5bc48c;
+  --warn: #e0b04a;
+  --crit: #f47a6e;
+  color-scheme: dark;
+}

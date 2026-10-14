@@ -1,12 +1,14 @@
 import { readFile } from "node:fs/promises";
 import type { IncomingMessage, ServerResponse } from "node:http";
 import { extname, join, normalize, sep } from "node:path";
-import type { fetchFileAt as FetchFileAt, fetchPr as FetchPr } from "./gh.ts";
-import type { Store } from "./store.ts";
-import type { createNotes } from "./notes.ts";
 import type { createBriefings } from "./briefing.ts";
-import { cleanDraft, emptyDraft, renderMarkdown, type Draft, type DraftComment } from "./review.ts";
+import type { fetchFileAt as FetchFileAt, fetchPr as FetchPr } from "./gh.ts";
+import { readMisses, summarise } from "./learning.ts";
+import type { createNotes } from "./notes.ts";
 import type { Coaching } from "./prompts/coach.ts";
+import { cleanDraft, emptyDraft, renderMarkdown, type Draft, type DraftComment } from "./review.ts";
+import { readJson, writeJson, type Store } from "./store.ts";
+import type { createTakes } from "./takes.ts";
 import type { Pr, PrRef, ReviewState } from "./types.ts";
 
 export interface AppDeps {
@@ -16,6 +18,7 @@ export interface AppDeps {
   notes: ReturnType<typeof createNotes>;
   briefings: ReturnType<typeof createBriefings>;
   coach: (pr: Pr, comment: DraftComment) => Promise<Coaching>;
+  takes: ReturnType<typeof createTakes>;
   webDir: string;
 }
 
@@ -29,9 +32,14 @@ const TYPES: Record<string, string> = {
   ".woff2": "font/woff2",
 };
 
+interface Settings {
+  takeFirst?: boolean;
+  model?: string;
+}
+
 const LOCAL_HOST = /^(localhost|127\.0\.0\.1|\[::1\])(:\d+)?$/;
 
-export function createApp({ store, fetchPr, fetchFileAt, notes, briefings, coach, webDir }: AppDeps) {
+export function createApp({ store, fetchPr, fetchFileAt, notes, briefings, coach, takes, webDir }: AppDeps) {
   const prs = new Map<string, Pr>();
 
   async function loadPr(ref: PrRef, refresh: boolean): Promise<Pr> {
@@ -112,6 +120,32 @@ export function createApp({ store, fetchPr, fetchFileAt, notes, briefings, coach
           return json(res, 200, draft);
         }
         return json(res, 200, (await store.readReviewJson<Draft>(ref, "review.json")) ?? emptyDraft(pr));
+      }
+      if (url.pathname === "/api/settings") {
+        const file = join(store.root, "settings.json");
+        const current = (await readJson<Settings>(file)) ?? {};
+        if (req.method === "PUT") {
+          const change = (await readBody(req)) as Partial<Settings>;
+          const next = { ...current, ...(typeof change.takeFirst === "boolean" ? { takeFirst: change.takeFirst } : {}) };
+          await writeJson(file, next);
+          return json(res, 200, next);
+        }
+        return json(res, 200, current);
+      }
+      if (url.pathname === "/api/misses") {
+        const misses = await readMisses(store.root);
+        return json(res, 200, { total: misses.length, categories: summarise(misses) });
+      }
+      if (url.pathname === "/api/takes") {
+        const ref = refFromQuery(url.searchParams);
+        if (!ref) return json(res, 400, { error: "Expected owner, repo and number" });
+        const pr = await loadPr(ref, false);
+        if (req.method === "POST") {
+          const { path, hunkIndex, take } = (await readBody(req)) as { path?: string; hunkIndex?: number; take?: string };
+          if (typeof path !== "string" || typeof hunkIndex !== "number" || typeof take !== "string" || !take.trim()) return json(res, 400, { error: "Write your take first" });
+          return json(res, 200, await takes.submit(pr, path, hunkIndex, take));
+        }
+        return json(res, 200, await takes.list(pr));
       }
       if (url.pathname === "/api/coach" && req.method === "POST") {
         const ref = refFromQuery(url.searchParams);

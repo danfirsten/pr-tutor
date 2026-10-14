@@ -90,7 +90,7 @@ Return one entry per hunk, with hunkIndex matching the numbers given. Write in p
 const MAX_FILE_LINES = 1500;
 const MAX_BODY_CHARS = 4000;
 
-export function notesPrompt(pr: Pr, file: PrFile, hunks: PatchHunk[], newContents: string | null): string {
+export function notesPrompt(pr: Pr, file: PrFile, hunks: PatchHunk[], newContents: string | null, focus: string[] = []): string {
   const parts = [
     `# Pull request: ${pr.title}`,
     pr.body ? `## Description\n${pr.body.slice(0, MAX_BODY_CHARS)}` : "## Description\n(none)",
@@ -103,6 +103,9 @@ export function notesPrompt(pr: Pr, file: PrFile, hunks: PatchHunk[], newContent
     const shown = lines.slice(0, MAX_FILE_LINES).map((line, i) => `${String(i + 1).padStart(5)} ${line}`).join("\n");
     const cut = lines.length > MAX_FILE_LINES ? `\n(cut at ${MAX_FILE_LINES} of ${lines.length} lines)` : "";
     parts.push(`## The whole file after this PR, with line numbers, for context\n\`\`\`\n${shown}${cut}\n\`\`\``);
+  }
+  if (focus.length) {
+    parts.push(`## This reviewer's habits\nIn past reviews they most often missed: ${focus.join(", ")}. Where one of these genuinely applies to a hunk, make sure your checks cover it. Don't invent issues to fit.`);
   }
   return parts.join("\n\n");
 }

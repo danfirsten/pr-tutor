@@ -30,6 +30,7 @@ async function start() {
     },
     notes: { start() {}, status: () => ({}), get: async () => ({ state: "none" as const }), retry() {} },
     briefings: { get: async () => ({ state: "none" as const }) },
+    takes: { list: async () => ({}), submit: async () => { throw new Error("unused"); } },
     coach: async () => ({ rewrite: "", label: "nit" as const, tips: [], accurate: "yes" as const, accuracyNote: "" }),
     webDir: "/nonexistent",
   });
@@ -59,6 +60,13 @@ describe("app", () => {
     expect(await (await fetch(`${base}/api/state?${q}`)).json()).toEqual({ reviewed: [] });
     await fetch(`${base}/api/state?${q}`, { method: "PUT", body: JSON.stringify({ reviewed: ["src/a.ts", 7] }) });
     expect(await (await fetch(`${base}/api/state?${q}`)).json()).toEqual({ reviewed: ["src/a.ts"] });
+  });
+
+  it("remembers the take-first setting and ignores anything else sent with it", async () => {
+    const { base } = await start();
+    expect(await (await fetch(`${base}/api/settings`)).json()).toEqual({});
+    await fetch(`${base}/api/settings`, { method: "PUT", body: JSON.stringify({ takeFirst: true, model: "evil" }) });
+    expect(await (await fetch(`${base}/api/settings`)).json()).toEqual({ takeFirst: true });
   });
 
   it("refuses requests from another site", async () => {

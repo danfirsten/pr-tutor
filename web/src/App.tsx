@@ -1,22 +1,22 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
-import { hunkFor, splitHunks } from "../../server/patch.ts";
-import { isNoise } from "../../server/noise.ts";
-import type { Pr, PrFile } from "../../server/types.ts";
-import type { Briefing } from "./api.ts";
-import { BriefingView } from "./BriefingView.tsx";
-import { useBriefing } from "./useBriefing.ts";
 import type { SelectedLineRange } from "@pierre/diffs";
-import type { DraftComment } from "./api.ts";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { isNoise } from "../../server/noise.ts";
+import { hunkFor, splitHunks } from "../../server/patch.ts";
+import type { Pr, PrFile } from "../../server/types.ts";
+import { loadPr, loadSettings, loadState, loadTakes, prRefFromLocation, saveSettings, saveState, submitTake, type Briefing, type DraftComment, type Take } from "./api.ts";
+import { BriefingView } from "./BriefingView.tsx";
 import { Composer } from "./Composer.tsx";
-import { ReviewView } from "./ReviewView.tsx";
-import { useReview } from "./useReview.ts";
-import { loadPr, loadState, prRefFromLocation, saveState } from "./api.ts";
 import { DiffPanel } from "./DiffPanel.tsx";
 import { KeyHelp } from "./KeyHelp.tsx";
+import { MissesView } from "./MissesView.tsx";
 import { NotesPanel } from "./NotesPanel.tsx";
-import { useNotes } from "./useNotes.ts";
-import { useTheme } from "./theme.ts";
+import { ReviewView } from "./ReviewView.tsx";
+import { TakeForm, TakeResult } from "./TakePanel.tsx";
+import { useBriefing } from "./useBriefing.ts";
 import { useKeys } from "./useKeys.ts";
+import { useNotes } from "./useNotes.ts";
+import { useReview } from "./useReview.ts";
+import { useTheme } from "./theme.ts";
 
 type State = { kind: "loading" } | { kind: "error"; message: string } | { kind: "ready"; pr: Pr };
 
@@ -55,7 +55,10 @@ function Review({ pr }: { pr: Pr }) {
   const { theme, cycle } = useTheme();
   const briefing = useBriefing(pr);
   const [path, setPath] = useState<string | null>(null);
-  const [view, setView] = useState<"briefing" | "review">("briefing");
+  const [view, setView] = useState<"briefing" | "review" | "misses">("briefing");
+  const [takeFirst, setTakeFirst] = useState(false);
+  const [takes, setTakes] = useState<Record<string, Take>>({});
+  const [comparing, setComparing] = useState<Set<string>>(new Set());
   const review = useReview(pr);
   const [editing, setEditing] = useState<DraftComment | null>(null);
   const [hunkIndex, setHunkIndex] = useState(0);
@@ -72,7 +75,33 @@ function Review({ pr }: { pr: Pr }) {
   const file = fileIndex === -1 ? null : ordered[fileIndex];
   const hunks = file ? hunksByPath.get(file.path)! : [];
   const notes = useNotes(pr, file?.path ?? null);
-  const concerns = (notes.notes?.hunks ?? []).filter((h) => fullFile || h.hunkIndex === hunkIndex).flatMap((h) => h.concerns);
+  const takeKey = file ? `${file.path}#${hunkIndex}` : "";
+  const gated = takeFirst && !!file && !fullFile && hunks.length > 0 && !takes[takeKey];
+  const concerns = gated ? [] : (notes.notes?.hunks ?? []).filter((h) => fullFile || h.hunkIndex === hunkIndex).flatMap((h) => h.concerns);
+
+  useEffect(() => {
+    loadSettings().then((s) => setTakeFirst(!!s.takeFirst), () => {});
+    loadTakes(pr).then(setTakes, () => {});
+  }, [pr]);
+
+  const toggleTakeFirst = () => {
+    const next = !takeFirst;
+    setTakeFirst(next);
+    saveSettings({ takeFirst: next }).catch(() => {});
+  };
+
+  const reveal = (text: string) => {
+    if (!file) return;
+    const key = takeKey;
+    const at = { path: file.path, hunkIndex };
+    setTakes((all) => ({ ...all, [key]: { ...at, headSha: pr.headSha, take: text, at: new Date().toISOString() } }));
+    if (text === "(skipped)") return;
+    setComparing((all) => new Set(all).add(key));
+    submitTake(pr, at.path, at.hunkIndex, text)
+      .then((saved) => setTakes((all) => ({ ...all, [key]: saved })))
+      .catch(() => {})
+      .finally(() => setComparing((all) => new Set([...all].filter((k) => k !== key))));
+  };
   const fileComments = (review.draft?.comments ?? []).filter((c) => c.path === file?.path && c.id !== editing?.id);
 
   const startComment = (range: SelectedLineRange | null) => {
@@ -170,6 +199,9 @@ function Review({ pr }: { pr: Pr }) {
         <span className="ref">
           {reviewed.size}/{pr.files.length} reviewed
         </span>
+        <button className={takeFirst ? "pill on" : "pill"} onClick={toggleTakeFirst} title="Write your own take on each hunk before Claude's notes appear">
+          <span className="label">Take first · {takeFirst ? "on" : "off"}</span>
+        </button>
         <button className="pill" onClick={() => setHelp(true)} title="Keyboard shortcuts">
           <span className="label">Keys ?</span>
         </button>
@@ -190,6 +222,10 @@ function Review({ pr }: { pr: Pr }) {
             <span className="tick" />
             <span className="name">Your review</span>
             <span className="counts">{review.draft?.comments.length ?? 0}</span>
+          </button>
+          <button className="file" aria-current={path === null && view === "misses"} onClick={() => (goToFile(-1), setView("misses"))}>
+            <span className="tick" />
+            <span className="name">What you tend to miss</span>
           </button>
           <div className="label group">Read · {read.length}</div>
           {read.map(fileButton)}
@@ -251,14 +287,26 @@ function Review({ pr }: { pr: Pr }) {
               </div>
             </>
           ) : (
-            view === "review" && review.draft ? (
+            view === "misses" ? (
+              <MissesView />
+            ) : view === "review" && review.draft ? (
               <ReviewView pr={pr} draft={review.draft} saveState={review.saveState} onChange={review.update} onOpen={openComment} />
             ) : (
               <BriefingView pr={pr} result={briefing} onOpen={open} onRetry={briefing.retry} />
             )
           )}
         </main>
-        {file && <NotesPanel state={notes.state} notes={notes.notes} hunkIndex={hunkIndex} fullFile={fullFile} onRetry={() => notes.retry(file.path)} />}
+        {file && (
+          <NotesPanel
+            state={notes.state}
+            notes={notes.notes}
+            hunkIndex={hunkIndex}
+            fullFile={fullFile}
+            onRetry={() => notes.retry(file.path)}
+            gate={gated ? <TakeForm key={takeKey} onReveal={reveal} /> : undefined}
+            before={!fullFile && takes[takeKey] ? <TakeResult take={takes[takeKey]} pending={comparing.has(takeKey)} /> : undefined}
+          />
+        )}
       </div>
       {help && <KeyHelp onClose={() => setHelp(false)} />}
     </div>

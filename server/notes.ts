@@ -13,6 +13,7 @@ interface Deps {
   claude: Pick<Claude, "ask">;
   store: Store;
   readNewFile: (pr: Pr, file: PrFile) => Promise<string | null>;
+  focus?: () => Promise<string[]>;
 }
 
 const AT_ONCE = 3;
@@ -22,7 +23,7 @@ export function isLargePr(pr: Pr): boolean {
   return pr.files.length > 60 || changed > 3000;
 }
 
-export function createNotes({ claude, store, readNewFile }: Deps) {
+export function createNotes({ claude, store, readNewFile, focus = async () => [] }: Deps) {
   const states = new Map<string, NoteState>();
   const pending: Array<{ key: string; pr: Pr; file: PrFile }> = [];
   let running = 0;
@@ -35,7 +36,8 @@ export function createNotes({ claude, store, readNewFile }: Deps) {
   async function generate(pr: Pr, file: PrFile) {
     const hunks = splitHunks(file.patch);
     const newContents = file.status === "removed" ? null : await readNewFile(pr, file).catch(() => null);
-    const notes = await claude.ask<FileNotes>({ system: notesSystem, prompt: notesPrompt(pr, file, hunks, newContents), schema: notesSchema });
+    const habits = await focus().catch(() => []);
+    const notes = await claude.ask<FileNotes>({ system: notesSystem, prompt: notesPrompt(pr, file, hunks, newContents, habits), schema: notesSchema });
     const clean: FileNotes = { hunks: notes.hunks.filter((h) => h.hunkIndex >= 0 && h.hunkIndex < hunks.length) };
     await store.writeReviewJson(pr, cacheName(pr, file.path), clean);
   }
@@ -96,6 +98,10 @@ export function createNotes({ claude, store, readNewFile }: Deps) {
       }
       await enqueue(pr, file, true);
       return stateOf(pr, file);
+    },
+
+    async cached(pr: Pr, path: string): Promise<FileNotes | null> {
+      return store.readReviewJson<FileNotes>(pr, cacheName(pr, path));
     },
 
     retry(pr: Pr, path: string) {

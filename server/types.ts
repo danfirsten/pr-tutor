@@ -37,3 +37,42 @@ export interface FileContentsPair {
 }
 
 export type NoteState = { state: "none" | "idle" | "queued" | "running" | "done" } | { state: "error"; error: string; login?: boolean };
+
+export const CATEGORIES = [
+  "understanding", "correctness", "edge-cases", "error-handling", "tests", "naming-readability",
+  "security", "performance", "concurrency", "api-contract", "design",
+] as const;
+export type Category = (typeof CATEGORIES)[number];
+
+export interface Miss {
+  at: string;
+  owner: string;
+  repo: string;
+  number: number;
+  path: string;
+  hunkIndex: number;
+  category: Category;
+  what: string;
+}
+
+export interface CategorySummary {
+  category: Category;
+  count: number;
+  latest: Miss[];
+}
+
+export interface Comparison {
+  line: string;
+  caught: string[];
+  missed: Array<{ category: Category; what: string }>;
+}
+
+export interface Take {
+  path: string;
+  hunkIndex: number;
+  headSha: string;
+  take: string;
+  at: string;
+  comparison?: Comparison;
+  error?: string;
+}

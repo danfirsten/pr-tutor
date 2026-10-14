@@ -1,6 +1,10 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { splitHunks } from "../../server/patch.ts";
-import type { Pr } from "../../server/types.ts";
+import { isNoise } from "../../server/noise.ts";
+import type { Pr, PrFile } from "../../server/types.ts";
+import type { Briefing } from "./api.ts";
+import { BriefingView } from "./BriefingView.tsx";
+import { useBriefing } from "./useBriefing.ts";
 import { loadPr, loadState, prRefFromLocation, saveState } from "./api.ts";
 import { DiffPanel } from "./DiffPanel.tsx";
 import { KeyHelp } from "./KeyHelp.tsx";
@@ -31,19 +35,34 @@ export function App() {
   return <Review pr={state.pr} />;
 }
 
-const DESCRIPTION = -1;
+function orderFiles(pr: Pr, briefing: Briefing | undefined) {
+  const byPath = new Map(pr.files.map((f) => [f.path, f]));
+  if (briefing) {
+    return {
+      read: briefing.readingOrder.map((r) => byPath.get(r.path)!).filter(Boolean),
+      skim: briefing.skim.map((r) => byPath.get(r.path)!).filter(Boolean),
+    };
+  }
+  return { read: pr.files.filter((f) => !isNoise(f.path)), skim: pr.files.filter((f) => isNoise(f.path)) };
+}
 
 function Review({ pr }: { pr: Pr }) {
   const { theme, cycle } = useTheme();
-  const [fileIndex, setFileIndex] = useState(DESCRIPTION);
+  const briefing = useBriefing(pr);
+  const [path, setPath] = useState<string | null>(null);
   const [hunkIndex, setHunkIndex] = useState(0);
   const [fullFile, setFullFile] = useState(false);
   const [help, setHelp] = useState(false);
   const [reviewed, setReviewed] = useState<Set<string>>(new Set());
 
-  const hunksByFile = useMemo(() => pr.files.map((f) => splitHunks(f.patch)), [pr]);
-  const file = fileIndex === DESCRIPTION ? null : pr.files[fileIndex];
-  const hunks = fileIndex === DESCRIPTION ? [] : hunksByFile[fileIndex];
+  const { read, skim } = useMemo(() => orderFiles(pr, briefing.briefing), [pr, briefing.briefing]);
+  const ordered = useMemo(() => [...read, ...skim], [read, skim]);
+  const hotspots = new Set(briefing.briefing?.hotspots.map((h) => h.path));
+  const hunksByPath = useMemo(() => new Map(pr.files.map((f) => [f.path, splitHunks(f.patch)])), [pr]);
+
+  const fileIndex = path === null ? -1 : ordered.findIndex((f) => f.path === path);
+  const file = fileIndex === -1 ? null : ordered[fileIndex];
+  const hunks = file ? hunksByPath.get(file.path)! : [];
   const notes = useNotes(pr, file?.path ?? null);
   const concerns = (notes.notes?.hunks ?? []).filter((h) => fullFile || h.hunkIndex === hunkIndex).flatMap((h) => h.concerns);
 
@@ -53,12 +72,14 @@ function Review({ pr }: { pr: Pr }) {
 
   const goToFile = useCallback(
     (index: number, atEnd = false) => {
-      const clamped = Math.max(DESCRIPTION, Math.min(pr.files.length - 1, index));
-      setFileIndex(clamped);
-      setHunkIndex(atEnd && clamped >= 0 ? Math.max(0, hunksByFile[clamped].length - 1) : 0);
+      const clamped = Math.max(-1, Math.min(ordered.length - 1, index));
+      const target = clamped === -1 ? null : ordered[clamped];
+      setPath(target?.path ?? null);
+      setHunkIndex(atEnd && target ? Math.max(0, hunksByPath.get(target.path)!.length - 1) : 0);
     },
-    [pr, hunksByFile],
+    [ordered, hunksByPath],
   );
+  const open = (p: string) => goToFile(ordered.findIndex((f) => f.path === p));
 
   const nextHunk = () => (hunkIndex < hunks.length - 1 && !fullFile ? setHunkIndex(hunkIndex + 1) : goToFile(fileIndex + 1));
   const prevHunk = () => (hunkIndex > 0 && !fullFile ? setHunkIndex(hunkIndex - 1) : goToFile(fileIndex - 1, true));
@@ -87,6 +108,19 @@ function Review({ pr }: { pr: Pr }) {
   );
   useKeys(keys);
 
+  const fileButton = (f: PrFile) => (
+    <button key={f.path} className="file" aria-current={f.path === path} onClick={() => open(f.path)} title={f.path}>
+      <span className="tick" aria-label={reviewed.has(f.path) ? "reviewed" : "not reviewed"}>
+        {reviewed.has(f.path) ? "✓" : "·"}
+      </span>
+      <span className="name">{f.path}</span>
+      <span className="counts">
+        {hotspots.has(f.path) && <span className="core">core </span>}
+        <NoteGlyph state={notes.status[f.path]?.state} /> <span className="add">+{f.additions}</span> <span className="del">−{f.deletions}</span>
+      </span>
+    </button>
+  );
+
   return (
     <div className="shell">
       <header className="top">
@@ -110,22 +144,17 @@ function Review({ pr }: { pr: Pr }) {
       </header>
       <div className={file ? "body with-notes" : "body"}>
         <nav className="files" aria-label="Changed files">
-          <button className="file" aria-current={fileIndex === DESCRIPTION} onClick={() => goToFile(DESCRIPTION)}>
+          <button className="file" aria-current={path === null} onClick={() => goToFile(-1)}>
             <span className="tick" />
-            <span className="name">Description</span>
+            <span className="name">Briefing</span>
+            <span className="counts">
+              <NoteGlyph state={briefing.state} />
+            </span>
           </button>
-          <div className="label">{pr.files.length} files</div>
-          {pr.files.map((f, i) => (
-            <button key={f.path} className="file" aria-current={i === fileIndex} onClick={() => goToFile(i)} title={f.path}>
-              <span className="tick" aria-label={reviewed.has(f.path) ? "reviewed" : "not reviewed"}>
-                {reviewed.has(f.path) ? "✓" : "·"}
-              </span>
-              <span className="name">{f.path}</span>
-              <span className="counts">
-                <NoteGlyph state={notes.status[f.path]?.state} /> <span className="add">+{f.additions}</span> <span className="del">−{f.deletions}</span>
-              </span>
-            </button>
-          ))}
+          <div className="label group">Read · {read.length}</div>
+          {read.map(fileButton)}
+          {skim.length > 0 && <div className="label group">Skim · {skim.length}</div>}
+          {skim.map(fileButton)}
         </nav>
         <main className="main">
           {file ? (
@@ -157,14 +186,7 @@ function Review({ pr }: { pr: Pr }) {
               </div>
             </>
           ) : (
-            <div className="prose">
-              <div className="label">Description</div>
-              <h2>{pr.title}</h2>
-              <pre>{pr.body || "No description."}</pre>
-              <p className="hint">
-                Press <kbd>j</kbd> to start with the first hunk, or <kbd>?</kbd> for every key.
-              </p>
-            </div>
+            <BriefingView pr={pr} result={briefing} onOpen={open} onRetry={briefing.retry} />
           )}
         </main>
         {file && <NotesPanel state={notes.state} notes={notes.notes} hunkIndex={hunkIndex} fullFile={fullFile} onRetry={() => notes.retry(file.path)} />}

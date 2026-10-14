@@ -125,3 +125,22 @@ kbd { font: 12px var(--mono); padding: 1px 6px; border-radius: 6px; background: 
 @media (prefers-reduced-motion: reduce) {
   .pulse { animation: none; }
 }
+
+.briefing section { margin-top: var(--space-6); }
+.briefing h3 { font-size: 18px; font-weight: 600; letter-spacing: -0.01em; color: var(--fg); margin: 0 0 var(--space-2); }
+.briefing p { margin: 0; }
+.lede { font-size: clamp(17px, 1.4vw, 20px); line-height: 1.45; letter-spacing: -0.012em; color: var(--mute); }
+.briefing .lede { color: var(--body); }
+.paths { padding-left: 20px; margin: 0; }
+.paths li + li { margin-top: var(--space-2); }
+.link { background: none; border: 0; padding: 0; cursor: pointer; color: var(--fg); text-decoration: underline; text-underline-offset: 4px; font-size: 13px; text-align: left; word-break: break-all; }
+.files .group { padding-top: var(--space-4); }
+.file .core { font: 500 10px var(--mono); letter-spacing: 0.06em; text-transform: uppercase; color: var(--fg); }
+
+@media (max-width: 600px) {
+  .top { flex-wrap: wrap; padding: var(--space-3) var(--space-4); row-gap: var(--space-2); }
+  .top h1 { flex-basis: 100%; white-space: normal; }
+  .top .spacer { display: none; }
+  .main { padding: var(--space-4); }
+  .notes { padding: var(--space-4); }
+}

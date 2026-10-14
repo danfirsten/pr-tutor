@@ -11,6 +11,7 @@ import { parsePrRef } from "./prRef.ts";
 import { run } from "./run.ts";
 import { createClaude } from "./claude.ts";
 import { createNotes } from "./notes.ts";
+import { createBriefings } from "./briefing.ts";
 import { createStore, readJson } from "./store.ts";
 
 const FIRST_PORT = Number(process.env.PR_TUTOR_PORT ?? 4517);
@@ -38,7 +39,8 @@ async function main() {
   const settings = (await readJson<{ model?: string }>(join(store.root, "settings.json"))) ?? {};
   const claude = createClaude({ cwd: tmpdir(), model: settings.model });
   const notes = createNotes({ claude, store, readNewFile: (pr, file) => fetchFileAt(pr, file.path, pr.headSha) });
-  const port = await listen(createApp({ store, fetchPr, fetchFileAt, notes, webDir }));
+  const briefings = createBriefings({ claude, store });
+  const port = await listen(createApp({ store, fetchPr, fetchFileAt, notes, briefings, webDir }));
   const url = `http://localhost:${port}/?pr=${ref.owner}/${ref.repo}/${ref.number}`;
   console.log(`pr-tutor: ${url}`);
   if (!process.argv.includes("--no-open")) openBrowser(url);

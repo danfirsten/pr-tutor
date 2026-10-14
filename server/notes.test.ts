@@ -45,6 +45,15 @@ describe("notes", () => {
     expect(restarted.asked).toHaveLength(0);
   });
 
+  it("leaves noise files until they're opened", async () => {
+    const { notes, asked } = await setup();
+    const p = pr([file("src/a.ts"), file("package-lock.json")]);
+    notes.start(p);
+    await settle();
+    expect(asked).toHaveLength(1);
+    expect(notes.status(p)["package-lock.json"]).toEqual({ state: "idle" });
+  });
+
   it("waits for the user to open files on a large PR", async () => {
     const { notes, asked } = await setup();
     const big = pr(Array.from({ length: 61 }, (_, i) => file(`f${i}.ts`)));

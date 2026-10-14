@@ -34,3 +34,9 @@ export const startNotes = (ref: PrRef) => request<NoteStatus>(`/api/notes/start?
 export const noteStatus = (ref: PrRef) => request<NoteStatus>(`/api/notes/status?${query(ref)}`);
 export const retryNotes = (ref: PrRef, path: string) => request<NoteStatus>(`/api/notes/retry?${query(ref)}&path=${encodeURIComponent(path)}`, { method: "POST" });
 export const loadNotes = (ref: PrRef, path: string) => request<NoteState & { notes?: FileNotes }>(`/api/notes?${query(ref)}&path=${encodeURIComponent(path)}`);
+
+export type { Briefing } from "../../server/prompts/briefing.ts";
+import type { Briefing } from "../../server/prompts/briefing.ts";
+
+export type BriefingResult = NoteState & { briefing?: Briefing };
+export const loadBriefing = (ref: PrRef, retry = false) => request<BriefingResult>(`/api/briefing?${query(ref)}${retry ? "&retry=1" : ""}`);

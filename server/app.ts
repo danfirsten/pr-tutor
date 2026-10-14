@@ -4,6 +4,7 @@ import { extname, join, normalize, sep } from "node:path";
 import type { fetchFileAt as FetchFileAt, fetchPr as FetchPr } from "./gh.ts";
 import type { Store } from "./store.ts";
 import type { createNotes } from "./notes.ts";
+import type { createBriefings } from "./briefing.ts";
 import type { Pr, PrRef, ReviewState } from "./types.ts";
 
 export interface AppDeps {
@@ -11,6 +12,7 @@ export interface AppDeps {
   fetchPr: typeof FetchPr;
   fetchFileAt: typeof FetchFileAt;
   notes: ReturnType<typeof createNotes>;
+  briefings: ReturnType<typeof createBriefings>;
   webDir: string;
 }
 
@@ -26,7 +28,7 @@ const TYPES: Record<string, string> = {
 
 const LOCAL_HOST = /^(localhost|127\.0\.0\.1|\[::1\])(:\d+)?$/;
 
-export function createApp({ store, fetchPr, fetchFileAt, notes, webDir }: AppDeps) {
+export function createApp({ store, fetchPr, fetchFileAt, notes, briefings, webDir }: AppDeps) {
   const prs = new Map<string, Pr>();
 
   async function loadPr(ref: PrRef, refresh: boolean): Promise<Pr> {
@@ -95,6 +97,11 @@ export function createApp({ store, fetchPr, fetchFileAt, notes, webDir }: AppDep
           return json(res, 200, { ok: true });
         }
         return json(res, 200, (await store.readReviewJson<ReviewState>(ref, "state.json")) ?? { reviewed: [] });
+      }
+      if (url.pathname === "/api/briefing") {
+        const ref = refFromQuery(url.searchParams);
+        if (!ref) return json(res, 400, { error: "Expected owner, repo and number" });
+        return json(res, 200, await briefings.get(await loadPr(ref, false), url.searchParams.has("retry")));
       }
       if (url.pathname.startsWith("/api/notes")) {
         const ref = refFromQuery(url.searchParams);

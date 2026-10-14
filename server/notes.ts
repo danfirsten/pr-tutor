@@ -1,5 +1,6 @@
 import { createHash } from "node:crypto";
 import { ClaudeLoginError, type Claude } from "./claude.ts";
+import { isNoise } from "./noise.ts";
 import { splitHunks } from "./patch.ts";
 import { NOTES_VERSION, notesPrompt, notesSchema, notesSystem, type FileNotes } from "./prompts/notes.ts";
 import type { Store } from "./store.ts";
@@ -78,7 +79,7 @@ export function createNotes({ claude, store, readNewFile }: Deps) {
   return {
     start(pr: Pr) {
       if (isLargePr(pr)) return;
-      for (const file of pr.files) if (file.patch) void enqueue(pr, file);
+      for (const file of pr.files) if (file.patch && !isNoise(file.path)) void enqueue(pr, file);
     },
 
     status(pr: Pr): Record<string, NoteState> {

@@ -1,4 +1,5 @@
 import { splitHunks } from "./patch.ts";
+import { refLabel } from "./prRef.ts";
 import type { Pr } from "./types.ts";
 
 export const LABELS = ["blocker", "suggestion", "question", "nit"] as const;
@@ -22,6 +23,7 @@ export interface Draft {
   owner: string;
   repo: string;
   number: number;
+  branch?: string;
   headSha: string;
   event: (typeof EVENTS)[number];
   body: string;
@@ -29,7 +31,7 @@ export interface Draft {
 }
 
 export function emptyDraft(pr: Pr): Draft {
-  return { owner: pr.owner, repo: pr.repo, number: pr.number, headSha: pr.headSha, event: "COMMENT", body: "", comments: [] };
+  return { owner: pr.owner, repo: pr.repo, number: pr.number, ...(pr.branch ? { branch: pr.branch } : {}), headSha: pr.headSha, event: "COMMENT", body: "", comments: [] };
 }
 
 export function commentableLines(patch: string | undefined): Record<Side, Set<number>> {
@@ -66,7 +68,7 @@ export function cleanDraft(pr: Pr, draft: Draft): Draft {
   });
   return {
     ...emptyDraft(pr),
-    event: EVENTS.includes(draft.event) ? draft.event : "COMMENT",
+    event: !pr.branch && EVENTS.includes(draft.event) ? draft.event : "COMMENT",
     body: typeof draft.body === "string" ? draft.body : "",
     comments,
   };
@@ -76,9 +78,11 @@ const VERDICT: Record<Draft["event"], string> = { COMMENT: "comment only", APPRO
 
 export function renderMarkdown(pr: Pr, draft: Draft): string {
   const out = [
-    `# Review of ${pr.owner}/${pr.repo}#${pr.number}: ${pr.title}`,
+    `# ${pr.branch ? "Self-review" : "Review"} of ${refLabel(pr)}: ${pr.title}`,
     "",
-    `Draft written against head ${draft.headSha.slice(0, 7)}. Verdict: ${VERDICT[draft.event]}.`,
+    pr.branch
+      ? `Checklist for an unpushed branch, written against ${draft.headSha.slice(0, 7)}. Nothing here gets posted.`
+      : `Draft written against head ${draft.headSha.slice(0, 7)}. Verdict: ${VERDICT[draft.event]}.`,
     "",
     "## Summary",
     "",

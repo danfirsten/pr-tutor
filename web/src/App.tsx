@@ -218,8 +218,10 @@ function Review({ pr }: { pr: Pr }) {
   };
   const scrollPane = (selector: string, by: number) => document.querySelector(selector)?.scrollBy({ top: by, behavior: "smooth" });
   const focus = (selector: string) => document.querySelector<HTMLElement>(selector)?.focus();
-  const cycleVerdict = () =>
+  const cycleVerdict = () => {
+    if (pr.branch) return;
     review.update((d) => ({ ...d, event: d.event === "COMMENT" ? "APPROVE" : d.event === "APPROVE" ? "REQUEST_CHANGES" : "COMMENT" }));
+  };
 
   const keys: KeyHandlers = {
     j: nextHunk,
@@ -268,9 +270,13 @@ function Review({ pr }: { pr: Pr }) {
     <div className="shell">
       <header className="top">
         <h1>{pr.title}</h1>
-        <a className="ref" href={pr.url} target="_blank" rel="noreferrer">
-          {pr.owner}/{pr.repo}#{pr.number} ↗
-        </a>
+        {pr.branch ? (
+          <span className="ref">{pr.owner}/{pr.repo} · local, not pushed</span>
+        ) : (
+          <a className="ref" href={pr.url} target="_blank" rel="noreferrer">
+            {pr.owner}/{pr.repo}#{pr.number} ↗
+          </a>
+        )}
         <span className="ref branch">
           {pr.author} · {pr.headRef} → {pr.baseRef}
         </span>

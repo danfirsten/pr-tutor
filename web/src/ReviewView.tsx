@@ -22,6 +22,7 @@ export function ReviewView({ pr, draft, saveState, onChange, onOpen }: Props) {
   const byPath = Map.groupBy(draft.comments, (c) => c.path);
   const blockers = draft.comments.filter((c) => c.label === "blocker").length;
   const stale = draft.comments.filter((c) => c.headSha !== pr.headSha).length;
+  const local = Boolean(pr.branch);
 
   return (
     <div className="prose review">
@@ -29,22 +30,25 @@ export function ReviewView({ pr, draft, saveState, onChange, onOpen }: Props) {
       <h2>Wrap up</h2>
       <p className="lede">
         {draft.comments.length} comment{draft.comments.length === 1 ? "" : "s"}
-        {blockers ? `, ${blockers} blocker${blockers === 1 ? "" : "s"}` : ""}. When you're happy, ask Claude Code to look it over and post it.
+        {blockers ? `, ${blockers} blocker${blockers === 1 ? "" : "s"}` : ""}.{" "}
+        {local ? "This branch isn't pushed, so nothing gets posted. Treat the comments as a checklist to fix before you open the PR." : "When you're happy, ask Claude Code to look it over and post it."}
       </p>
 
-      <section>
-        <h3>
-          Verdict <span className="label">· v to change</span>
-        </h3>
-        <div className="chips" role="radiogroup" aria-label="Verdict">
-          {VERDICTS.map((v) => (
-            <button key={v.event} role="radio" aria-checked={draft.event === v.event} className={`chip ${draft.event === v.event ? "on" : ""}`} title={v.hint} onClick={() => onChange((d) => ({ ...d, event: v.event }))}>
-              {v.label}
-            </button>
-          ))}
-        </div>
-        {draft.event === "APPROVE" && blockers > 0 && <p className="warn-text">You're approving with {blockers} blocker{blockers === 1 ? "" : "s"} open. Usually that means request changes.</p>}
-      </section>
+      {!local && (
+        <section>
+          <h3>
+            Verdict <span className="label">· v to change</span>
+          </h3>
+          <div className="chips" role="radiogroup" aria-label="Verdict">
+            {VERDICTS.map((v) => (
+              <button key={v.event} role="radio" aria-checked={draft.event === v.event} className={`chip ${draft.event === v.event ? "on" : ""}`} title={v.hint} onClick={() => onChange((d) => ({ ...d, event: v.event }))}>
+                {v.label}
+              </button>
+            ))}
+          </div>
+          {draft.event === "APPROVE" && blockers > 0 && <p className="warn-text">You're approving with {blockers} blocker{blockers === 1 ? "" : "s"} open. Usually that means request changes.</p>}
+        </section>
+      )}
 
       <section>
         <h3>
@@ -66,7 +70,7 @@ export function ReviewView({ pr, draft, saveState, onChange, onOpen }: Props) {
       <section>
         <h3>Comments</h3>
         {draft.comments.length === 0 && <p className="muted">None yet. Select a line number in the diff to comment on it.</p>}
-        {stale > 0 && <p className="warn-text">{stale} comment{stale === 1 ? " was" : "s were"} written on an older version of this PR. Check they still apply.</p>}
+        {stale > 0 && <p className="warn-text">{stale} comment{stale === 1 ? " was" : "s were"} written on an older version of this {local ? "branch" : "PR"}. Check they still apply.</p>}
         {[...byPath].map(([path, comments]) => (
           <div key={path} className="comment-group">
             <div className="mono path">{path}</div>
@@ -90,15 +94,23 @@ export function ReviewView({ pr, draft, saveState, onChange, onOpen }: Props) {
         ))}
       </section>
 
-      <section>
-        <h3>Hand it to Claude Code</h3>
-        <p>Your draft is saved as you type, in a folder Claude Code can read:</p>
-        <pre className="code">~/.pr-tutor/reviews/{pr.owner}/{pr.repo}/{pr.number}/review.md</pre>
-        <p>In a Claude Code chat, say:</p>
-        <pre className="code">
-          look over my review of {pr.owner}/{pr.repo}#{pr.number}
-        </pre>
-      </section>
+      {local ? (
+        <section>
+          <h3>Your checklist</h3>
+          <p>It's saved as you type. Work through it, commit, and run pr-tutor --local again to check the fixes:</p>
+          <pre className="code">~/.pr-tutor/reviews/{pr.owner}/{pr.repo}/local/{encodeURIComponent(pr.branch ?? "")}/review.md</pre>
+        </section>
+      ) : (
+        <section>
+          <h3>Hand it to Claude Code</h3>
+          <p>Your draft is saved as you type, in a folder Claude Code can read:</p>
+          <pre className="code">~/.pr-tutor/reviews/{pr.owner}/{pr.repo}/{pr.number}/review.md</pre>
+          <p>In a Claude Code chat, say:</p>
+          <pre className="code">
+            look over my review of {pr.owner}/{pr.repo}#{pr.number}
+          </pre>
+        </section>
+      )}
     </div>
   );
 }

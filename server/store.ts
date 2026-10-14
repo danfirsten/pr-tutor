@@ -6,7 +6,10 @@ import type { PrRef } from "./types.ts";
 export type Store = ReturnType<typeof createStore>;
 
 export function createStore(root = join(homedir(), ".pr-tutor")) {
-  const reviewDir = (ref: PrRef) => join(root, "reviews", ref.owner, ref.repo, String(ref.number));
+  const reviewDir = (ref: PrRef) =>
+    ref.branch
+      ? join(root, "reviews", ref.owner, ref.repo, "local", encodeURIComponent(ref.branch).replace(/^\./, "%2E"))
+      : join(root, "reviews", ref.owner, ref.repo, String(ref.number));
 
   return {
     root,

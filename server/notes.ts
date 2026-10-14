@@ -2,6 +2,7 @@ import { createHash } from "node:crypto";
 import { ClaudeLoginError, type Claude } from "./claude.ts";
 import { isNoise } from "./noise.ts";
 import { splitHunks } from "./patch.ts";
+import { refLabel } from "./prRef.ts";
 import { NOTES_VERSION, notesPrompt, notesSchema, notesSystem, type FileNotes } from "./prompts/notes.ts";
 import type { Store } from "./store.ts";
 import type { NoteState, Pr, PrFile } from "./types.ts";
@@ -28,7 +29,7 @@ export function createNotes({ claude, store, readNewFile, focus = async () => []
   const pending: Array<{ key: string; pr: Pr; file: PrFile }> = [];
   let running = 0;
 
-  const keyOf = (pr: Pr, path: string) => `${pr.owner}/${pr.repo}#${pr.number}@${pr.headSha}:${path}`;
+  const keyOf = (pr: Pr, path: string) => `${refLabel(pr)}@${pr.headSha}:${path}`;
   const cacheName = (pr: Pr, path: string) => `cache/${pr.headSha}/notes-v${NOTES_VERSION}/${createHash("sha1").update(path).digest("hex").slice(0, 16)}.json`;
 
   const stateOf = (pr: Pr, file: PrFile): NoteState => (file.patch ? (states.get(keyOf(pr, file.path)) ?? { state: "idle" }) : { state: "none" });

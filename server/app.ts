@@ -2,9 +2,9 @@ import { readFile } from "node:fs/promises";
 import type { IncomingMessage, ServerResponse } from "node:http";
 import { extname, join, normalize, sep } from "node:path";
 import type { createBriefings } from "./briefing.ts";
-import type { fetchFileAt as FetchFileAt, fetchPr as FetchPr } from "./gh.ts";
 import { readMisses, summarise } from "./learning.ts";
 import type { createNotes } from "./notes.ts";
+import { refLabel } from "./prRef.ts";
 import type { Coaching } from "./prompts/coach.ts";
 import { cleanDraft, emptyDraft, renderMarkdown, type Draft, type DraftComment } from "./review.ts";
 import { readJson, writeJson, type Store } from "./store.ts";
@@ -13,8 +13,8 @@ import type { Pr, PrRef, ReviewState } from "./types.ts";
 
 export interface AppDeps {
   store: Store;
-  fetchPr: typeof FetchPr;
-  fetchFileAt: typeof FetchFileAt;
+  fetchPr: (ref: PrRef) => Promise<Pr>;
+  fetchFileAt: (pr: Pr, path: string, sha: string) => Promise<string>;
   notes: ReturnType<typeof createNotes>;
   briefings: ReturnType<typeof createBriefings>;
   coach: (pr: Pr, comment: DraftComment) => Promise<Coaching>;
@@ -43,7 +43,7 @@ export function createApp({ store, fetchPr, fetchFileAt, notes, briefings, coach
   const prs = new Map<string, Pr>();
 
   async function loadPr(ref: PrRef, refresh: boolean): Promise<Pr> {
-    const key = `${ref.owner}/${ref.repo}#${ref.number}`;
+    const key = refLabel(ref);
     const cached = prs.get(key);
     if (cached && !refresh) return cached;
     const pr = await fetchPr(ref);
@@ -56,7 +56,7 @@ export function createApp({ store, fetchPr, fetchFileAt, notes, briefings, coach
     const pr = await loadPr(ref, false);
     const file = pr.files.find((f) => f.path === path);
     if (!file) return null;
-    const read = (at: string, sha: string) => fetchFileAt(ref, at, sha).catch(() => null);
+    const read = (at: string, sha: string) => fetchFileAt(pr, at, sha).catch(() => null);
     const [oldText, newText] = await Promise.all([
       file.status === "added" ? null : read(file.previousPath ?? file.path, pr.baseSha),
       file.status === "removed" ? null : read(file.path, pr.headSha),
@@ -186,6 +186,8 @@ export function createApp({ store, fetchPr, fetchFileAt, notes, briefings, coach
 function refFromQuery(q: URLSearchParams): PrRef | null {
   const owner = q.get("owner");
   const repo = q.get("repo");
+  const branch = q.get("branch");
+  if (owner && repo && branch) return { owner, repo, number: 0, branch };
   const number = Number(q.get("number"));
   return owner && repo && number > 0 ? { owner, repo, number } : null;
 }

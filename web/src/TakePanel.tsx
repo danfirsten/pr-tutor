@@ -1,12 +1,15 @@
 import { useState } from "react";
+import { blurOnEscape } from "./useKeys.ts";
 import type { Take } from "./api.ts";
 
-export function TakeForm({ onReveal }: { onReveal: (take: string) => void }) {
+export function TakeForm({ onReveal, onSkip }: { onReveal: (take: string) => void; onSkip: () => void }) {
   const [take, setTake] = useState("");
   return (
     <div className="take">
       <h3>Your take first</h3>
-      <p className="muted">Before you see Claude's notes, write what this hunk does and what could go wrong. A sentence or two is plenty.</p>
+      <p className="muted">
+        Before you see Claude's notes, write what this hunk does and what could go wrong. A sentence or two is plenty. Press <kbd>i</kbd> to start typing and <kbd>Esc</kbd> to leave the box.
+      </p>
       <textarea
         rows={5}
         value={take}
@@ -14,14 +17,19 @@ export function TakeForm({ onReveal }: { onReveal: (take: string) => void }) {
         onChange={(e) => setTake(e.target.value)}
         onKeyDown={(e) => {
           if (e.key === "Enter" && (e.metaKey || e.ctrlKey) && take.trim()) onReveal(take);
+          if (e.altKey && e.code === "KeyS") {
+            e.preventDefault();
+            onSkip();
+          }
+          blurOnEscape(e);
         }}
       />
       <div className="row">
         <button className="pill solid" disabled={!take.trim()} onClick={() => onReveal(take)}>
           <span className="label">Reveal notes · ⌘↵</span>
         </button>
-        <button className="textbtn" onClick={() => onReveal("(skipped)")}>
-          Skip this hunk
+        <button className="textbtn" onClick={onSkip}>
+          Skip this hunk · s
         </button>
       </div>
     </div>

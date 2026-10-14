@@ -195,3 +195,11 @@ kbd { font: 12px var(--mono); padding: 1px 6px; border-radius: 6px; background: 
 .misses li + li { margin-top: var(--space-2); }
 .pill.on { background: var(--fg); }
 .pill.on .label { color: var(--bg); }
+
+:focus-visible { outline: 2px solid var(--fg); outline-offset: 2px; }
+textarea:focus-visible { outline-offset: -1px; }
+.chip .key { opacity: 0.6; margin-left: 2px; }
+.keyhelp { max-width: min(920px, calc(100vw - 32px)); max-height: calc(100vh - 48px); overflow: auto; }
+.keygroups { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: var(--space-6); margin-top: var(--space-3); }
+.keygroups h3 { font-size: 13px; font-weight: 600; color: var(--fg); margin: 0; }
+.keygroups td { font-size: 13px; vertical-align: top; }

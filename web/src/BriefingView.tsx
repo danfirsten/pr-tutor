@@ -78,7 +78,7 @@ export function BriefingView({ pr, result, onOpen, onRetry }: Props) {
         <pre>{pr.body || "No description."}</pre>
       </section>
       <p className="hint">
-        Press <kbd>j</kbd> to start with the first hunk, or <kbd>?</kbd> for every key.
+        Press <kbd>j</kbd> to start with the first hunk, <kbd>↓</kbd> to move through its lines, <kbd>c</kbd> to comment, or <kbd>?</kbd> for every key.
       </p>
     </div>
   );

@@ -29,6 +29,7 @@ async function start() {
       return `${path} at ${sha}`;
     },
     notes: { start() {}, status: () => ({}), get: async () => ({ state: "none" as const }), retry() {} },
+    briefings: { get: async () => ({ state: "none" as const }) },
     webDir: "/nonexistent",
   });
   server = createServer(app);

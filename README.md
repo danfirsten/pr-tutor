@@ -64,6 +64,8 @@ Then, in Claude Code:
 
 Claude reads your draft, checks each comment against the code, tells you what's good and what to fix, shows exactly what it will post, and posts it as one GitHub review once you say yes.
 
+Reviewing your own PR before anyone else sees it? Say "apply my pr-tutor review" instead. Claude treats your comments as a to-do list, fixes the code once you agree the plan, and never posts anything.
+
 ## Review your own branch before you push
 
 Run this inside a repo, on the branch you want to check:

@@ -41,3 +41,7 @@ export function splitHunks(patch: string | undefined): PatchHunk[] {
 export function hunkPatch(path: string, hunk: PatchHunk, previousPath?: string): string {
   return `--- a/${previousPath ?? path}\n+++ b/${path}\n${hunk.text}\n`;
 }
+
+export function hunkFor(hunks: PatchHunk[], at: { line: number; side: "LEFT" | "RIGHT" }): PatchHunk | undefined {
+  return hunks.find((h) => (at.side === "LEFT" ? h.oldStart <= at.line && at.line < h.oldStart + h.oldLines : h.newStart <= at.line && at.line < h.newStart + h.newLines));
+}

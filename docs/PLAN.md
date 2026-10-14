@@ -13,7 +13,7 @@ pr-tutor <PR>            CLI: parse the PR ref, start the server, open the brows
        ├─ claude -p      notes, briefing, coaching, take comparison
        └─ ~/.pr-tutor/   cache, drafts, settings, learning log
   └─ page (React)        briefing, file list, hunk view, notes, comments
-skills/review-post/      Claude Code skill: look over the draft and post it
+skills/pr-tutor-review/      Claude Code skill: look over the draft and post it
 ```
 
 ## Stack and why
@@ -124,7 +124,7 @@ Each slice branches from `main` after the one before it merges. Source line coun
 | 3 | `slice-3-notes` | `claude.ts`, notes prompt, background generation, cache by SHA, progress stream, notes panel, retry, login error | ~400 | Notes are additive. Failures leave the diff usable |
 | 4 | `slice-4-briefing` | Briefing prompt and screen, reading order and noise flags feed the file list | ~250 | Falls back to GitHub's file order |
 | 5 | `slice-5-comments` | Line and range comments, labels, summary and verdict, autosave, `review.json`/`review.md` | ~400 | Writes only under `~/.pr-tutor` |
-| 6 | `slice-6-coach-skill` | "Coach this", the `review-post` Claude Code skill, README install steps | ~250 | Skill posts only after a yes |
+| 6 | `slice-6-coach-skill` | "Coach this", the `pr-tutor-review` Claude Code skill, README install steps | ~250 | Skill posts only after a yes |
 | 7 | `slice-7-take-first` | Take-first toggle, reveal and compare, learning log, misses view, notes prompt reads top misses | ~400 | Off by default |
 
 From slice 3 on, you can review each PR with pr-tutor itself. That's good practice, and it's the best test the tool will get.

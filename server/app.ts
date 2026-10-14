@@ -5,7 +5,8 @@ import type { fetchFileAt as FetchFileAt, fetchPr as FetchPr } from "./gh.ts";
 import type { Store } from "./store.ts";
 import type { createNotes } from "./notes.ts";
 import type { createBriefings } from "./briefing.ts";
-import { cleanDraft, emptyDraft, renderMarkdown, type Draft } from "./review.ts";
+import { cleanDraft, emptyDraft, renderMarkdown, type Draft, type DraftComment } from "./review.ts";
+import type { Coaching } from "./prompts/coach.ts";
 import type { Pr, PrRef, ReviewState } from "./types.ts";
 
 export interface AppDeps {
@@ -14,6 +15,7 @@ export interface AppDeps {
   fetchFileAt: typeof FetchFileAt;
   notes: ReturnType<typeof createNotes>;
   briefings: ReturnType<typeof createBriefings>;
+  coach: (pr: Pr, comment: DraftComment) => Promise<Coaching>;
   webDir: string;
 }
 
@@ -29,7 +31,7 @@ const TYPES: Record<string, string> = {
 
 const LOCAL_HOST = /^(localhost|127\.0\.0\.1|\[::1\])(:\d+)?$/;
 
-export function createApp({ store, fetchPr, fetchFileAt, notes, briefings, webDir }: AppDeps) {
+export function createApp({ store, fetchPr, fetchFileAt, notes, briefings, coach, webDir }: AppDeps) {
   const prs = new Map<string, Pr>();
 
   async function loadPr(ref: PrRef, refresh: boolean): Promise<Pr> {
@@ -110,6 +112,13 @@ export function createApp({ store, fetchPr, fetchFileAt, notes, briefings, webDi
           return json(res, 200, draft);
         }
         return json(res, 200, (await store.readReviewJson<Draft>(ref, "review.json")) ?? emptyDraft(pr));
+      }
+      if (url.pathname === "/api/coach" && req.method === "POST") {
+        const ref = refFromQuery(url.searchParams);
+        if (!ref) return json(res, 400, { error: "Expected owner, repo and number" });
+        const comment = (await readBody(req)) as DraftComment;
+        if (typeof comment?.body !== "string" || !comment.body.trim()) return json(res, 400, { error: "Write a draft first" });
+        return json(res, 200, await coach(await loadPr(ref, false), comment));
       }
       if (url.pathname === "/api/briefing") {
         const ref = refFromQuery(url.searchParams);

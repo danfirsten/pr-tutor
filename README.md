@@ -34,15 +34,23 @@ pr-tutor https://github.com/owner/repo/pull/123
 
 The page opens in your browser at `localhost:4517`. Running it again for another PR reuses the same server.
 
+Everything works from the keyboard. The main keys:
+
 | Key | Does |
 |---|---|
 | `j` / `k` | Next / previous hunk |
 | `n` / `p` | Next / previous file |
+| `↓` / `↑` | Move the line cursor (hold `⇧` to cover several lines) |
+| `c` or `Enter` | Comment on the cursor line or lines |
+| `e` | Edit your comment on this line |
+| `]` / `[` | Jump to your next / previous comment |
 | `f` | Whole file with the changes inline |
 | `x` | Mark the file reviewed |
-| `?` | All keys |
+| `b` / `r` / `m` | Briefing / your review / what you tend to miss |
+| `t` | Take first on / off |
+| `?` | Every key, including the ones inside a comment (`⌘↵` save, `⌥1`–`⌥4` label, `⌥C` coach) |
 
-Click a line number (or drag across several) to comment. Pick a label: **blocker** must change before merging, **suggestion** is the author's call, **question** asks to understand, and **nit** is tiny and optional. Press **Coach this** to have Claude check your comment is right and help you word it.
+You can also click a line number (or drag across several) to comment. Pick a label: **blocker** must change before merging, **suggestion** is the author's call, **question** asks to understand, and **nit** is tiny and optional. Press **Coach this** to have Claude check your comment is right and help you word it.
 
 Open **Your review** in the sidebar to write a summary and pick a verdict. Everything saves as you type to:
 

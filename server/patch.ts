@@ -45,3 +45,25 @@ export function hunkPatch(path: string, hunk: PatchHunk, previousPath?: string):
 export function hunkFor(hunks: PatchHunk[], at: { line: number; side: "LEFT" | "RIGHT" }): PatchHunk | undefined {
   return hunks.find((h) => (at.side === "LEFT" ? h.oldStart <= at.line && at.line < h.oldStart + h.oldLines : h.newStart <= at.line && at.line < h.newStart + h.newLines));
 }
+
+export interface HunkRow {
+  side: "LEFT" | "RIGHT";
+  line: number;
+  changed: boolean;
+}
+
+export function hunkRows(hunk: PatchHunk): HunkRow[] {
+  const rows: HunkRow[] = [];
+  let oldLine = hunk.oldStart;
+  let newLine = hunk.newStart;
+  for (const text of hunk.text.split("\n").slice(1)) {
+    if (text.startsWith("\\")) continue;
+    if (text.startsWith("-")) rows.push({ side: "LEFT", line: oldLine++, changed: true });
+    else if (text.startsWith("+")) rows.push({ side: "RIGHT", line: newLine++, changed: true });
+    else {
+      rows.push({ side: "RIGHT", line: newLine++, changed: false });
+      oldLine++;
+    }
+  }
+  return rows;
+}

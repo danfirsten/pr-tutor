@@ -37,17 +37,26 @@ export function Composer({ prRef, comment, onSave, onCancel, onDelete }: Props) 
     );
   };
 
-  useEffect(() => box.current?.focus(), []);
+  useEffect(() => {
+    const timer = setTimeout(() => box.current?.focus(), 0);
+    return () => clearTimeout(timer);
+  }, []);
 
   const save = () => body.trim() && onSave({ ...comment, body, label });
+  const applyCoaching = (coaching: Coaching) => {
+    setBody(coaching.rewrite);
+    setLabel(coaching.label);
+    setCoach({ kind: "idle" });
+    box.current?.focus();
+  };
 
   return (
     <div className="composer card">
       <div className="label">Comment on {lineRef(comment)}</div>
       <div className="chips" role="radiogroup" aria-label="Label">
-        {LABELS.map((l) => (
+        {LABELS.map((l, i) => (
           <button key={l.label} role="radio" aria-checked={label === l.label} aria-label={`${l.label}: ${l.hint}`} className={`chip ${label === l.label ? "on" : ""}`} onClick={() => setLabel(l.label)} title={l.hint}>
-            {l.label}
+            {l.label} <span className="key">⌥{i + 1}</span>
           </button>
         ))}
       </div>
@@ -60,6 +69,19 @@ export function Composer({ prRef, comment, onSave, onCancel, onDelete }: Props) 
         onKeyDown={(e) => {
           if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) save();
           if (e.key === "Escape") onCancel();
+          if (!e.altKey) return;
+          const digit = /^Digit([1-4])$/.exec(e.code);
+          const action = digit
+            ? () => setLabel(LABELS[Number(digit[1]) - 1].label)
+            : {
+                KeyC: () => body.trim() && coach.kind !== "busy" && askCoach(),
+                KeyU: () => coach.kind === "done" && applyCoaching(coach.coaching),
+                KeyK: () => setCoach({ kind: "idle" }),
+                KeyD: () => onDelete?.(),
+              }[e.code];
+          if (!action) return;
+          e.preventDefault();
+          action();
         }}
       />
       <div className="row">
@@ -70,12 +92,12 @@ export function Composer({ prRef, comment, onSave, onCancel, onDelete }: Props) 
           <span className="label">Cancel · Esc</span>
         </button>
         <button className="pill" onClick={askCoach} disabled={!body.trim() || coach.kind === "busy"} title="Claude suggests a clearer, kinder version and explains why">
-          <span className="label">{coach.kind === "busy" ? "Coaching…" : "Coach this"}</span>
+          <span className="label">{coach.kind === "busy" ? "Coaching…" : "Coach this · ⌥C"}</span>
         </button>
         <span className="spacer" />
         {onDelete && (
           <button className="pill" onClick={onDelete}>
-            <span className="label">Delete</span>
+            <span className="label">Delete · ⌥D</span>
           </button>
         )}
       </div>
@@ -84,12 +106,11 @@ export function Composer({ prRef, comment, onSave, onCancel, onDelete }: Props) 
         <CoachCard
           coaching={coach.coaching}
           unchanged={coach.coaching.rewrite.trim() === body.trim() && coach.coaching.label === label}
-          onUse={() => {
-            setBody(coach.coaching.rewrite);
-            setLabel(coach.coaching.label);
+          onUse={() => applyCoaching(coach.coaching)}
+          onDismiss={() => {
             setCoach({ kind: "idle" });
+            box.current?.focus();
           }}
-          onDismiss={() => setCoach({ kind: "idle" })}
         />
       )}
     </div>
@@ -132,11 +153,11 @@ function CoachCard({ coaching, unchanged, onUse, onDismiss }: { coaching: Coachi
       <div className="row">
         {!unchanged && (
           <button className="pill solid" onClick={onUse}>
-            <span className="label">Use this</span>
+            <span className="label">Use this · ⌥U</span>
           </button>
         )}
         <button className="pill" onClick={onDismiss}>
-          <span className="label">{unchanged ? "Close" : "Keep mine"}</span>
+          <span className="label">{unchanged ? "Close" : "Keep mine"} · ⌥K</span>
         </button>
       </div>
     </div>

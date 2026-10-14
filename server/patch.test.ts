@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { hunkPatch, splitHunks } from "./patch.ts";
+import { hunkPatch, hunkRows, splitHunks } from "./patch.ts";
 
 const twoHunks = [
   "@@ -1,3 +1,3 @@ function a() {",
@@ -52,5 +52,17 @@ describe("hunkPatch", () => {
   it("uses the old path for a rename", () => {
     const [hunk] = splitHunks(twoHunks);
     expect(hunkPatch("src/b.ts", hunk, "src/a.ts").startsWith("--- a/src/a.ts\n+++ b/src/b.ts\n")).toBe(true);
+  });
+});
+
+describe("hunkRows", () => {
+  it("lists every line a cursor can land on, with the side and number GitHub expects", () => {
+    const [hunk] = splitHunks("@@ -10,3 +10,3 @@\n ten\n-eleven\n+ELEVEN\n\\ No newline at end of file\n twelve");
+    expect(hunkRows(hunk)).toEqual([
+      { side: "RIGHT", line: 10, changed: false },
+      { side: "LEFT", line: 11, changed: true },
+      { side: "RIGHT", line: 11, changed: true },
+      { side: "RIGHT", line: 12, changed: false },
+    ]);
   });
 });

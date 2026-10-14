@@ -1,6 +1,6 @@
 import type { DiffLineAnnotation, SelectedLineRange } from "@pierre/diffs";
 import { MultiFileDiff, PatchDiff } from "@pierre/diffs/react";
-import { useEffect, useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { hunkPatch, type PatchHunk } from "../../server/patch.ts";
 import type { FileContentsPair, PrFile, PrRef } from "../../server/types.ts";
 import { loadFile, type Concern, type DraftComment } from "./api.ts";
@@ -18,12 +18,27 @@ interface Props {
   theme: Theme;
   concerns: Concern[];
   comments: DraftComment[];
-  selected: DraftComment | null;
+  selected: SelectedLineRange | null;
   onSelect: (range: SelectedLineRange | null) => void;
   onEdit: (comment: DraftComment) => void;
 }
 
 export function DiffPanel({ prRef, file, hunks, hunkIndex, fullFile, theme, concerns, comments, selected, onSelect, onEdit }: Props) {
+  const wrapper = useRef<HTMLDivElement>(null);
+  const current = useRef(selected);
+  current.current = selected;
+  const onLineSelected = (range: SelectedLineRange | null) => {
+    if (range && !sameRange(range, current.current)) onSelect(range);
+  };
+  useEffect(() => {
+    if (!selected) return;
+    const root = wrapper.current?.querySelector("*")?.shadowRoot;
+    const type = selected.endSide === "deletions" || (!selected.endSide && selected.side === "deletions") ? "change-deletion" : "";
+    const rows = [...(root?.querySelectorAll<HTMLElement>(`[data-column-number="${selected.end}"]`) ?? [])];
+    const row = rows.find((r) => (type ? r.dataset.lineType === type : r.dataset.lineType !== "change-deletion")) ?? rows[0];
+    row?.scrollIntoView({ block: "nearest", behavior: "smooth" });
+  }, [selected]);
+
   const options = {
     diffStyle: "unified",
     themeType: theme,
@@ -31,7 +46,7 @@ export function DiffPanel({ prRef, file, hunks, hunkIndex, fullFile, theme, conc
     overflow: "wrap",
     hunkSeparators: "simple",
     enableLineSelection: true,
-    onLineSelected: onSelect,
+    onLineSelected,
   } as const;
 
   const lineAnnotations: DiffLineAnnotation<Annotation>[] = [
@@ -67,23 +82,21 @@ export function DiffPanel({ prRef, file, hunks, hunkIndex, fullFile, theme, conc
 
   const hunk = hunks[hunkIndex];
   return (
-    <div className="diff">
+    <div className="diff" ref={wrapper}>
       <PatchDiff
         key={`${file.path}:${hunk.index}`}
         patch={hunkPatch(file.path, hunk, file.previousPath)}
         options={options}
         lineAnnotations={lineAnnotations}
         renderAnnotation={renderAnnotation}
-        selectedLines={selected ? toRange(selected) : null}
+        selectedLines={selected}
       />
     </div>
   );
 }
 
-const toSide = (side: DraftComment["side"]) => (side === "LEFT" ? ("deletions" as const) : ("additions" as const));
-
-function toRange(c: DraftComment): SelectedLineRange {
-  return c.start_line ? { start: c.start_line, side: toSide(c.start_side ?? c.side), end: c.line, endSide: toSide(c.side) } : { start: c.line, side: toSide(c.side), end: c.line };
+function sameRange(a: SelectedLineRange, b: SelectedLineRange | null) {
+  return !!b && a.start === b.start && a.end === b.end && (a.side ?? "additions") === (b.side ?? "additions") && (a.endSide ?? a.side ?? "additions") === (b.endSide ?? b.side ?? "additions");
 }
 
 interface FullFileProps {

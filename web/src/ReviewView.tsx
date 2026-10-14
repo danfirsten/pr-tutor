@@ -1,6 +1,7 @@
 import type { Pr } from "../../server/types.ts";
 import type { Draft, DraftComment } from "./api.ts";
 import { lineRef } from "./Composer.tsx";
+import { blurOnEscape } from "./useKeys.ts";
 import type { SaveState } from "./useReview.ts";
 
 const VERDICTS: Array<{ event: Draft["event"]; label: string; hint: string }> = [
@@ -32,7 +33,9 @@ export function ReviewView({ pr, draft, saveState, onChange, onOpen }: Props) {
       </p>
 
       <section>
-        <h3>Verdict</h3>
+        <h3>
+          Verdict <span className="label">· v to change</span>
+        </h3>
         <div className="chips" role="radiogroup" aria-label="Verdict">
           {VERDICTS.map((v) => (
             <button key={v.event} role="radio" aria-checked={draft.event === v.event} className={`chip ${draft.event === v.event ? "on" : ""}`} title={v.hint} onClick={() => onChange((d) => ({ ...d, event: v.event }))}>
@@ -44,7 +47,9 @@ export function ReviewView({ pr, draft, saveState, onChange, onOpen }: Props) {
       </section>
 
       <section>
-        <h3>Summary</h3>
+        <h3>
+          Summary <span className="label">· i to type, Esc to leave</span>
+        </h3>
         <textarea
           className="summary"
           rows={5}
@@ -54,6 +59,7 @@ export function ReviewView({ pr, draft, saveState, onChange, onOpen }: Props) {
             const body = e.target.value;
             onChange((d) => ({ ...d, body }));
           }}
+          onKeyDown={blurOnEscape}
         />
       </section>
 

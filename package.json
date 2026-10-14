@@ -1,0 +1,45 @@
+{
+  "name": "pr-tutor",
+  "version": "0.1.0",
+  "description": "Review GitHub PRs one hunk at a time with Claude notes, and learn while you do it",
+  "scripts": {
+    "build": "vite build && tsc -p tsconfig.server.json",
+    "prepare": "npm run build",
+    "start": "node server/cli.ts",
+    "test": "vitest run",
+    "check": "tsc -p tsconfig.server.json --noEmit && tsc -p tsconfig.web.json --noEmit"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/danfirsten/pr-tutor.git"
+  },
+  "license": "MIT",
+  "type": "module",
+  "bugs": {
+    "url": "https://github.com/danfirsten/pr-tutor/issues"
+  },
+  "homepage": "https://github.com/danfirsten/pr-tutor#readme",
+  "dependencies": {
+    "@pierre/diffs": "^1.5.2",
+    "react": "^19.3.0",
+    "react-dom": "^19.3.0"
+  },
+  "devDependencies": {
+    "@types/node": "^26.6.5",
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
+    "@vitejs/plugin-react": "^6.1.2",
+    "typescript": "^7.0.2",
+    "vite": "^8.3.4",
+    "vitest": "^5.0.4"
+  },
+  "bin": {
+    "pr-tutor": "dist/server/cli.js"
+  },
+  "files": [
+    "dist"
+  ],
+  "engines": {
+    "node": ">=23.6"
+  }
+}

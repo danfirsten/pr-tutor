@@ -54,3 +54,18 @@ import type { DraftComment as Comment } from "../../server/review.ts";
 
 export const coachComment = (ref: PrRef, comment: Comment) =>
   request<Coaching>(`/api/coach?${query(ref)}`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(comment) });
+
+export type { Take, CategorySummary, Category } from "../../server/types.ts";
+import type { CategorySummary, Take } from "../../server/types.ts";
+
+export interface Settings {
+  takeFirst?: boolean;
+}
+
+export const loadSettings = () => request<Settings>("/api/settings");
+export const saveSettings = (change: Settings) =>
+  request<Settings>("/api/settings", { method: "PUT", headers: { "content-type": "application/json" }, body: JSON.stringify(change) });
+export const loadTakes = (ref: PrRef) => request<Record<string, Take>>(`/api/takes?${query(ref)}`);
+export const submitTake = (ref: PrRef, path: string, hunkIndex: number, take: string) =>
+  request<Take>(`/api/takes?${query(ref)}`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ path, hunkIndex, take }) });
+export const loadMisses = () => request<{ total: number; categories: CategorySummary[] }>("/api/misses");

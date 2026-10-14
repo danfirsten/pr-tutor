@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import type { Concern, FileNotes, HunkNote, NoteState } from "./api.ts";
 
 interface Props {
@@ -6,19 +7,26 @@ interface Props {
   hunkIndex: number;
   fullFile: boolean;
   onRetry: () => void;
+  gate?: ReactNode;
+  before?: ReactNode;
 }
 
-export function NotesPanel({ state, notes, hunkIndex, fullFile, onRetry }: Props) {
+export function NotesPanel({ state, notes, hunkIndex, fullFile, onRetry, gate, before }: Props) {
   return (
     <aside className="notes" aria-label="Claude's notes">
-      <div className="label">Claude's notes</div>
-      <Body state={state} notes={notes} hunkIndex={hunkIndex} fullFile={fullFile} onRetry={onRetry} />
+      {gate ?? (
+        <>
+          {before}
+          <div className="label">Claude's notes</div>
+          <Body state={state} notes={notes} hunkIndex={hunkIndex} fullFile={fullFile} onRetry={onRetry} />
+        </>
+      )}
       <p className="fine">Notes can be wrong. Check each one against the code before you repeat it.</p>
     </aside>
   );
 }
 
-function Body({ state, notes, hunkIndex, fullFile, onRetry }: Props) {
+function Body({ state, notes, hunkIndex, fullFile, onRetry }: Omit<Props, "gate" | "before">) {
   if (state?.state === "none") return <p className="muted">No text diff here, so there's nothing to annotate.</p>;
   if (state?.state === "error") {
     return (

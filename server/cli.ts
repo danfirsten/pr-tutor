@@ -14,6 +14,8 @@ import { createClaude } from "./claude.ts";
 import { createNotes } from "./notes.ts";
 import { createBriefings } from "./briefing.ts";
 import { coach } from "./coach.ts";
+import { readMisses, topMisses } from "./learning.ts";
+import { createTakes } from "./takes.ts";
 import { createStore, readJson } from "./store.ts";
 
 const FIRST_PORT = Number(process.env.PR_TUTOR_PORT ?? 4517);
@@ -49,9 +51,15 @@ async function main() {
   const store = createStore();
   const settings = (await readJson<{ model?: string }>(join(store.root, "settings.json"))) ?? {};
   const claude = createClaude({ cwd: tmpdir(), model: settings.model });
-  const notes = createNotes({ claude, store, readNewFile: (pr, file) => fetchFileAt(pr, file.path, pr.headSha) });
+  const notes = createNotes({
+    claude,
+    store,
+    readNewFile: (pr, file) => fetchFileAt(pr, file.path, pr.headSha),
+    focus: async () => topMisses(await readMisses(store.root)),
+  });
+  const takes = createTakes({ claude, store, notesFor: notes.cached });
   const briefings = createBriefings({ claude, store });
-  const port = await listen(createApp({ store, fetchPr, fetchFileAt, notes, briefings, coach: (pr, comment) => coach(claude, pr, comment), webDir }));
+  const port = await listen(createApp({ store, fetchPr, fetchFileAt, notes, briefings, coach: (pr, comment) => coach(claude, pr, comment), takes, webDir }));
   const url = `http://localhost:${port}/?pr=${ref.owner}/${ref.repo}/${ref.number}`;
   console.log(`pr-tutor: ${url}`);
   if (!process.argv.includes("--no-open")) openBrowser(url);

@@ -177,3 +177,21 @@ kbd { font: 12px var(--mono); padding: 1px 6px; border-radius: 6px; background: 
 .coach .suggested { display: flex; flex-direction: column; gap: var(--space-2); background: var(--bg); border: 1px solid var(--surface-line); border-radius: var(--radius-media); padding: var(--space-3); white-space: pre-wrap; color: var(--fg); }
 .coach .suggested .status { align-self: flex-start; }
 .status.ok .dot { background: var(--ok); }
+
+.take { display: flex; flex-direction: column; gap: var(--space-3); }
+.take textarea { width: 100%; resize: vertical; font: 14px/1.5 var(--sans); color: var(--fg); background: var(--surface); border: 1px solid var(--surface-line); border-radius: var(--radius-media); padding: var(--space-3); }
+.take textarea:focus { outline: 2px solid var(--fg); outline-offset: -1px; }
+.take-result { display: flex; flex-direction: column; gap: var(--space-2); border-bottom: 1px solid var(--line); padding-bottom: var(--space-4); }
+.take-result blockquote { margin: 0; padding-left: var(--space-3); border-left: 2px solid var(--fg); color: var(--fg); white-space: pre-wrap; }
+.take-result ul { padding-left: 18px; }
+.bars { width: 100%; border-collapse: collapse; margin-top: var(--space-4); }
+.bars td { padding: var(--space-2) var(--space-3) var(--space-2) 0; border-top: 1px solid var(--line); font-size: 13px; }
+.bars .bar-cell { width: 60%; }
+.bars .bar { display: block; height: 8px; border-radius: var(--radius-pill); background: var(--fg); }
+.bars .num { text-align: right; font-variant-numeric: tabular-nums; color: var(--fg); }
+.misses section { margin-top: var(--space-6); }
+.misses h3 { font-size: 18px; font-weight: 600; color: var(--fg); margin: 0 0 var(--space-2); text-transform: capitalize; }
+.misses ul { padding-left: 18px; margin: 0; }
+.misses li + li { margin-top: var(--space-2); }
+.pill.on { background: var(--fg); }
+.pill.on .label { color: var(--bg); }

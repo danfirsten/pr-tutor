@@ -5,6 +5,7 @@ import type { createBriefings } from "./briefing.ts";
 import { readMisses, summarise } from "./learning.ts";
 import type { createNotes } from "./notes.ts";
 import { refLabel } from "./prRef.ts";
+import type { createAsks, Question } from "./asks.ts";
 import type { Coaching } from "./prompts/coach.ts";
 import { cleanDraft, emptyDraft, renderMarkdown, type Draft, type DraftComment } from "./review.ts";
 import { readJson, writeJson, type Store } from "./store.ts";
@@ -19,6 +20,7 @@ export interface AppDeps {
   briefings: ReturnType<typeof createBriefings>;
   coach: (pr: Pr, comment: DraftComment) => Promise<Coaching>;
   takes: ReturnType<typeof createTakes>;
+  asks: Pick<ReturnType<typeof createAsks>, "list" | "submit">;
   webDir: string;
 }
 
@@ -39,7 +41,7 @@ interface Settings {
 
 const LOCAL_HOST = /^(localhost|127\.0\.0\.1|\[::1\])(:\d+)?$/;
 
-export function createApp({ store, fetchPr, fetchFileAt, notes, briefings, coach, takes, webDir }: AppDeps) {
+export function createApp({ store, fetchPr, fetchFileAt, notes, briefings, coach, takes, asks, webDir }: AppDeps) {
   const prs = new Map<string, Pr>();
 
   async function loadPr(ref: PrRef, refresh: boolean): Promise<Pr> {
@@ -146,6 +148,13 @@ export function createApp({ store, fetchPr, fetchFileAt, notes, briefings, coach
           return json(res, 200, await takes.submit(pr, path, hunkIndex, take));
         }
         return json(res, 200, await takes.list(pr));
+      }
+      if (url.pathname === "/api/asks") {
+        const ref = refFromQuery(url.searchParams);
+        if (!ref) return json(res, 400, { error: "Expected owner, repo and number" });
+        const pr = await loadPr(ref, false);
+        if (req.method === "POST") return json(res, 200, await asks.submit(pr, (await readBody(req)) as Question));
+        return json(res, 200, await asks.list(pr));
       }
       if (url.pathname === "/api/coach" && req.method === "POST") {
         const ref = refFromQuery(url.searchParams);

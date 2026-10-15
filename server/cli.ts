@@ -17,6 +17,7 @@ import { createBriefings } from "./briefing.ts";
 import { coach } from "./coach.ts";
 import { readMisses, topMisses } from "./learning.ts";
 import { createTakes } from "./takes.ts";
+import { createAsks } from "./asks.ts";
 import { createStore, readJson, type Store } from "./store.ts";
 import type { Pr, PrRef } from "./types.ts";
 
@@ -89,8 +90,9 @@ async function main() {
     focus: async () => topMisses(await readMisses(store.root)),
   });
   const takes = createTakes({ claude, store, notesFor: notes.cached });
+  const asks = createAsks({ claude, store, readNewFile: (pr, file) => fileAt(pr, file.path, pr.headSha) });
   const briefings = createBriefings({ claude, store });
-  const port = await listen(createApp({ store, fetchPr: (r) => (r.branch ? reloadLocal(store, r) : fetchPr(r)), fetchFileAt: fileAt, notes, briefings, coach: (pr, comment) => coach(claude, pr, comment), takes, webDir }));
+  const port = await listen(createApp({ store, fetchPr: (r) => (r.branch ? reloadLocal(store, r) : fetchPr(r)), fetchFileAt: fileAt, notes, briefings, coach: (pr, comment) => coach(claude, pr, comment), takes, asks, webDir }));
   const url = `http://localhost:${port}/?${ref.branch ? `local=${ref.owner}/${ref.repo}/${encodeURIComponent(ref.branch)}` : `pr=${ref.owner}/${ref.repo}/${ref.number}`}`;
   console.log(`pr-tutor: ${url}`);
   if (!process.argv.includes("--no-open")) openBrowser(url);

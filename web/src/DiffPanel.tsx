@@ -22,9 +22,10 @@ interface Props {
   onSelect: (range: SelectedLineRange | null) => void;
   onEdit: (comment: DraftComment) => void;
   onUseConcern: (concern: Concern) => void;
+  onAskConcern: (concern: Concern) => void;
 }
 
-export function DiffPanel({ prRef, file, hunks, hunkIndex, fullFile, theme, concerns, comments, selected, onSelect, onEdit, onUseConcern }: Props) {
+export function DiffPanel({ prRef, file, hunks, hunkIndex, fullFile, theme, concerns, comments, selected, onSelect, onEdit, onUseConcern, onAskConcern }: Props) {
   const wrapper = useRef<HTMLDivElement>(null);
   const current = useRef(selected);
   current.current = selected;
@@ -61,9 +62,14 @@ export function DiffPanel({ prRef, file, hunks, hunkIndex, fullFile, theme, conc
         <SeverityPill severity={metadata.concern.severity} />
         <span className="text">{metadata.concern.text}</span>
         {!fullFile && (
-          <button className="textbtn" onClick={() => onUseConcern(metadata.concern)}>
-            Use as comment · a
-          </button>
+          <span className="actions">
+            <button className="textbtn" onClick={() => onAskConcern(metadata.concern)}>
+              Ask · Q
+            </button>
+            <button className="textbtn" onClick={() => onUseConcern(metadata.concern)}>
+              Use as comment · a
+            </button>
+          </span>
         )}
       </div>
     ) : (

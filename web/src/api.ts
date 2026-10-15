@@ -73,3 +73,10 @@ export const loadTakes = (ref: PrRef) => request<Record<string, Take>>(`/api/tak
 export const submitTake = (ref: PrRef, path: string, hunkIndex: number, take: string) =>
   request<Take>(`/api/takes?${query(ref)}`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ path, hunkIndex, take }) });
 export const loadMisses = () => request<{ total: number; categories: CategorySummary[] }>("/api/misses");
+
+export type { Thread, Turn, Question } from "../../server/prompts/ask.ts";
+import type { Question, Thread } from "../../server/prompts/ask.ts";
+
+export const loadAsks = (ref: PrRef) => request<Thread[]>(`/api/asks?${query(ref)}`);
+export const askQuestion = (ref: PrRef, question: Question) =>
+  request<Thread>(`/api/asks?${query(ref)}`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(question) });

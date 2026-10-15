@@ -112,7 +112,7 @@ kbd { font: 12px var(--mono); padding: 1px 6px; border-radius: 6px; background: 
 .inline-concern { display: flex; align-items: baseline; gap: var(--space-2); padding: 6px var(--space-3); font: 13px/1.45 var(--sans); background: var(--well); color: var(--fg); }
 .inline-concern { flex-wrap: wrap; }
 .inline-concern .text { flex: 1 1 18em; min-width: 0; }
-.inline-concern .textbtn { margin-left: auto; white-space: nowrap; }
+.inline-concern .actions { margin-left: auto; display: flex; gap: var(--space-3); white-space: nowrap; }
 .glyph { font-size: 11px; }
 .pulse { animation: pulse 1.6s ease-in-out infinite; }
 @keyframes pulse { 50% { opacity: 0.6; } }
@@ -187,6 +187,16 @@ kbd { font: 12px var(--mono); padding: 1px 6px; border-radius: 6px; background: 
 .take-result { display: flex; flex-direction: column; gap: var(--space-2); border-bottom: 1px solid var(--line); padding-bottom: var(--space-4); }
 .take-result blockquote { margin: 0; padding-left: var(--space-3); border-left: 2px solid var(--fg); color: var(--fg); white-space: pre-wrap; }
 .take-result ul { padding-left: 18px; }
+.asks { display: flex; flex-direction: column; gap: var(--space-3); border-bottom: 1px solid var(--line); padding-bottom: var(--space-4); }
+.thread { display: flex; flex-direction: column; gap: var(--space-2); background: var(--surface); border: 1px solid var(--surface-line); border-radius: var(--radius-media); padding: var(--space-3); }
+.thread .concern-head { flex-wrap: wrap; }
+.thread .turn { display: flex; flex-direction: column; gap: var(--space-1); }
+.thread .q { margin: 0; padding-left: var(--space-3); border-left: 2px solid var(--fg); color: var(--fg); white-space: pre-wrap; }
+.thread .a { margin: 0; white-space: pre-wrap; }
+.thread .textbtn { align-self: flex-start; }
+.askbox { display: flex; flex-direction: column; gap: var(--space-2); }
+.askbox textarea { width: 100%; resize: vertical; font: 14px/1.5 var(--sans); color: var(--fg); background: var(--bg); border: 1px solid var(--surface-line); border-radius: var(--radius-media); padding: var(--space-3); }
+.askbox textarea:focus { outline: 2px solid var(--fg); outline-offset: -1px; }
 .bars { width: 100%; border-collapse: collapse; margin-top: var(--space-4); }
 .bars td { padding: var(--space-2) var(--space-3) var(--space-2) 0; border-top: 1px solid var(--line); font-size: 13px; }
 .bars .bar-cell { width: 60%; }

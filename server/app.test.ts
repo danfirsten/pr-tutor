@@ -22,6 +22,7 @@ afterEach(() => server?.close());
 async function start() {
   const reads: string[] = [];
   const fetched: string[] = [];
+  const asked: unknown[] = [];
   const app = createApp({
     store: createStore(await mkdtemp(join(tmpdir(), "pr-tutor-"))),
     fetchPr: async (ref) => {
@@ -35,13 +36,17 @@ async function start() {
     notes: { start() {}, status: () => ({}), get: async () => ({ state: "none" as const }), retry() {} },
     briefings: { get: async () => ({ state: "none" as const }) },
     takes: { list: async () => ({}), submit: async () => { throw new Error("unused"); } },
+    asks: {
+      list: async () => [],
+      submit: async (_pr, q) => (asked.push(q), { id: "t1", path: "src/a.ts", line: 1, side: "RIGHT" as const, headSha: "head", turns: [{ question: q.question, at: "now", answer: "Because." }] }),
+    },
     coach: async () => ({ rewrite: "", label: "nit" as const, tips: [], accurate: "yes" as const, accuracyNote: "" }),
     webDir: "/nonexistent",
   });
   server = createServer(app);
   await new Promise<void>((resolve) => server.listen(0, "127.0.0.1", resolve));
   const port = (server.address() as { port: number }).port;
-  return { base: `http://localhost:${port}`, reads, fetched };
+  return { base: `http://localhost:${port}`, reads, fetched, asked };
 }
 
 const q = "owner=acme&repo=widgets&number=42";
@@ -62,6 +67,15 @@ describe("app", () => {
     expect(reads).toContain("git:src/a.ts@head");
     await fetch(`${base}/api/pr?${q}`);
     expect(fetched).toEqual(["feature/x", "42"]);
+  });
+
+  it("lists saved questions and passes a new one through", async () => {
+    const { base, asked } = await start();
+    expect(await (await fetch(`${base}/api/asks?${q}`)).json()).toEqual([]);
+    const question = { path: "src/a.ts", line: 1, side: "RIGHT", question: "Why?" };
+    const res = await fetch(`${base}/api/asks?${q}`, { method: "POST", body: JSON.stringify(question) });
+    expect(await res.json()).toMatchObject({ id: "t1", turns: [{ answer: "Because." }] });
+    expect(asked).toEqual([question]);
   });
 
   it("won't read a path that isn't in the PR", async () => {

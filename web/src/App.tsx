@@ -4,6 +4,8 @@ import { isNoise } from "../../server/noise.ts";
 import { hunkFor, hunkRows, splitHunks, type HunkRow } from "../../server/patch.ts";
 import type { Pr, PrFile } from "../../server/types.ts";
 import { loadPr, loadSettings, loadState, loadTakes, prRefFromLocation, saveSettings, saveState, submitTake, type Briefing, type DraftComment, type Take } from "./api.ts";
+import { AskPanel, type Asking } from "./AskPanel.tsx";
+import { aboutConcern, aboutLines } from "./askTarget.ts";
 import { BriefingView } from "./BriefingView.tsx";
 import { Composer } from "./Composer.tsx";
 import { commentFromConcern, concernAt } from "./concernComment.ts";
@@ -13,6 +15,7 @@ import { MissesView } from "./MissesView.tsx";
 import { NotesPanel } from "./NotesPanel.tsx";
 import { ReviewView } from "./ReviewView.tsx";
 import { TakeForm, TakeResult } from "./TakePanel.tsx";
+import { useAsks } from "./useAsks.ts";
 import { useBriefing } from "./useBriefing.ts";
 import { useKeys, type KeyHandlers } from "./useKeys.ts";
 import { useNotes } from "./useNotes.ts";
@@ -62,11 +65,14 @@ function Review({ pr }: { pr: Pr }) {
   const [comparing, setComparing] = useState<Set<string>>(new Set());
   const review = useReview(pr);
   const [editing, setEditing] = useState<DraftComment | null>(null);
+  const asks = useAsks(pr);
+  const [asking, setAsking] = useState<Asking | null>(null);
   const [hunkIndex, setHunkIndexRaw] = useState(0);
   const [cursor, setCursor] = useState<{ at: number; anchor: number } | null>(null);
   const setHunkIndex = (index: number) => {
     setHunkIndexRaw(index);
     setCursor(null);
+    setAsking(null);
   };
   const [fullFile, setFullFile] = useState(false);
   const [help, setHelp] = useState(false);
@@ -140,6 +146,26 @@ function Review({ pr }: { pr: Pr }) {
     setEditing(comment);
   };
 
+  const asksHere = asks.threads.filter((t) => t.path === file?.path && (fullFile || hunkFor(hunks, t)?.index === hunkIndex));
+
+  const askAboutLines = () => {
+    if (!file || gated || fullFile) return;
+    const where = aboutLines(file.path, rows, span);
+    if (where) setAsking({ where });
+  };
+
+  const askAboutConcern = (concern = concernAt(concerns, cursor ? rows[cursor.at] : null)) => {
+    if (!file || !concern || gated || fullFile) return;
+    setAsking({ where: aboutConcern(file.path, concern) });
+  };
+
+  const sendQuestion = async (question: string) => {
+    if (!asking) return;
+    if ("threadId" in asking) return void asks.ask({ threadId: asking.threadId, question });
+    const thread = await asks.ask({ ...asking.where, question });
+    if (thread) setAsking({ threadId: thread.id });
+  };
+
   const editAtCursor = () => {
     const inHunk = fileComments.filter((c) => hunkFor(hunks, c)?.index === hunkIndex);
     const row = cursor ? rows[cursor.at] : null;
@@ -203,6 +229,7 @@ function Review({ pr }: { pr: Pr }) {
       setPath(target?.path ?? null);
       setEditing(null);
       setCursor(null);
+      setAsking(null);
       setHunkIndexRaw(atEnd && target ? Math.max(0, hunksByPath.get(target.path)!.length - 1) : 0);
     },
     [ordered, hunksByPath],
@@ -243,6 +270,8 @@ function Review({ pr }: { pr: Pr }) {
     Enter: commentAtCursor,
     e: editAtCursor,
     a: () => adoptConcern(),
+    q: askAboutLines,
+    Q: () => askAboutConcern(),
     "]": () => jumpComment(1),
     "[": () => jumpComment(-1),
     f: () => file && setFullFile((v) => !v),
@@ -359,6 +388,7 @@ function Review({ pr }: { pr: Pr }) {
                 onSelect={startComment}
                 onEdit={setEditing}
                 onUseConcern={adoptConcern}
+                onAskConcern={askAboutConcern}
               />
               {editing && editing.path === file.path && (
                 <Composer
@@ -400,7 +430,12 @@ function Review({ pr }: { pr: Pr }) {
             fullFile={fullFile}
             onRetry={() => notes.retry(file.path)}
             gate={gated ? <TakeForm key={takeKey} onReveal={reveal} onSkip={() => reveal("(skipped)")} /> : undefined}
-            before={!fullFile && takes[takeKey] ? <TakeResult take={takes[takeKey]} pending={comparing.has(takeKey)} /> : undefined}
+            before={
+              <>
+                {!fullFile && takes[takeKey] && <TakeResult take={takes[takeKey]} pending={comparing.has(takeKey)} />}
+                <AskPanel threads={asksHere} headSha={pr.headSha} asking={asking} pending={asks.pending} onSend={sendQuestion} onClose={() => setAsking(null)} onFollowUp={(threadId) => setAsking({ threadId })} />
+              </>
+            }
           />
         )}
       </div>

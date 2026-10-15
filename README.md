@@ -44,6 +44,7 @@ Everything works from the keyboard. The main keys:
 | `c` or `Enter` | Comment on the cursor line or lines |
 | `e` | Edit your comment on this line |
 | `a` | Use Claude's concern on this line as a comment |
+| `q` / `Q` | Ask Claude about the cursor line(s) / about its concern on this line |
 | `]` / `[` | Jump to your next / previous comment |
 | `f` | Whole file with the changes inline |
 | `x` | Mark the file reviewed |
@@ -52,6 +53,8 @@ Everything works from the keyboard. The main keys:
 | `?` | Every key, including the ones inside a comment (`⌘↵` save, `Esc` or `⌘.` cancel, `⌥1`–`⌥4` label, `⌥C` coach) |
 
 You can also click a line number (or drag across several) to comment. Pick a label: **blocker** must change before merging, **suggestion** is the author's call, **question** asks to understand, and **nit** is tiny and optional. Press **Coach this** to have Claude check your comment is right and help you word it.
+
+Not sure what a line does, or whether one of Claude's concerns is right? Press `q` to ask about the cursor line or lines (or the whole hunk with no cursor), or **Ask** on a concern. The answer shows in the notes pane, you can follow up, and every question is saved with the PR in `asks.json`, so it's still there next time.
 
 Open **Your review** in the sidebar to write a summary and pick a verdict. Everything saves as you type to:
 

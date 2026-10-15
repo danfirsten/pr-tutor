@@ -18,6 +18,8 @@ const GROUPS: Array<[string, Array<[string, string]>]> = [
       ["c or Enter", "Comment on the cursor line or lines"],
       ["e", "Edit your comment on this line or hunk"],
       ["a", "Use Claude's concern on this line (or the hunk's first) as a comment"],
+      ["q", "Ask Claude about the cursor line or lines (or the whole hunk)"],
+      ["Q", "Ask Claude about its concern on this line (or the hunk's first)"],
       ["] / [", "Next / previous of your comments"],
       ["Esc", "Clear the cursor"],
     ],

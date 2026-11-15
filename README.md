@@ -1,3 +1,5 @@
+![pr-tutor: review a pull request one hunk at a time. Pip perches on a hunk beside a reviewer's note.](docs/assets/banner.png)
+
 # pr-tutor
 
 Review GitHub pull requests one hunk at a time, with Claude's notes beside the code, and learn what a good reviewer looks for while you do it.

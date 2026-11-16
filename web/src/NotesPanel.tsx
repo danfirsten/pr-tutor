@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import type { Concern, FileNotes, HunkNote, NoteState } from "./api.ts";
+import { NotesSkeleton } from "./Skeleton.tsx";
 
 interface Props {
   state: NoteState | undefined;
@@ -39,11 +40,11 @@ function Body({ state, notes, hunkIndex, fullFile, onRetry }: Omit<Props, "gate"
     );
   }
   if (!notes) {
-    return <p className="muted pulse">{state?.state === "queued" ? "Waiting for its turn" : "Claude is reading this file"}</p>;
+    return <NotesSkeleton label={state?.state === "queued" ? "Waiting for its turn" : "Claude is reading this file. Start on the diff; notes slot in when ready."} />;
   }
   if (fullFile) {
     const concerns = notes.hunks.flatMap((h) => h.concerns);
-    return concerns.length ? <Concerns concerns={concerns} /> : <p className="muted">No concerns in this file. Press f to go back to hunk notes.</p>;
+    return concerns.length ? <Concerns concerns={concerns} /> : <p className="muted">No concerns in this file. Click a line and press q to ask about it, or f to go back to hunk notes.</p>;
   }
   const note = notes.hunks.find((h) => h.hunkIndex === hunkIndex);
   return note ? <Hunk note={note} /> : <p className="muted">Claude didn't write notes for this hunk.</p>;

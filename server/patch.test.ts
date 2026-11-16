@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { hunkPatch, hunkRows, splitHunks } from "./patch.ts";
+import { fullFileRows, hunkPatch, hunkRows, hunkSize, lineCount, splitHunks } from "./patch.ts";
 
 const twoHunks = [
   "@@ -1,3 +1,3 @@ function a() {",
@@ -64,5 +64,38 @@ describe("hunkRows", () => {
       { side: "RIGHT", line: 11, changed: true },
       { side: "RIGHT", line: 12, changed: false },
     ]);
+  });
+});
+
+describe("fullFileRows", () => {
+  const hunks = splitHunks(["@@ -2,2 +2,3 @@", " b", "-c", "+C", "+D", "@@ -9,1 +10,1 @@", "-x", "+X"].join("\n"));
+
+  it("fills unchanged lines around and between hunks, keeping removed lines in place", () => {
+    const rows = fullFileRows(hunks, 11);
+    expect(rows.map((r) => `${r.side === "LEFT" ? "-" : r.changed ? "+" : " "}${r.line}`)).toEqual([
+      " 1", " 2", "-3", "+3", "+4", " 5", " 6", " 7", " 8", " 9", "-9", "+10", " 11",
+    ]);
+  });
+
+  it("is just the hunk rows for a deleted file", () => {
+    const deleted = splitHunks(["@@ -1,2 +0,0 @@", "-a", "-b"].join("\n"));
+    expect(fullFileRows(deleted, 0)).toEqual([
+      { side: "LEFT", line: 1, changed: true },
+      { side: "LEFT", line: 2, changed: true },
+    ]);
+  });
+});
+
+describe("lineCount", () => {
+  it("ignores the trailing newline", () => {
+    expect(lineCount("a\nb\n")).toBe(2);
+    expect(lineCount("a\nb")).toBe(2);
+    expect(lineCount(null)).toBe(0);
+  });
+});
+
+describe("hunkSize", () => {
+  it("counts added and removed lines", () => {
+    expect(hunkSize(splitHunks("@@ -1,2 +1,2 @@\n a\n-b\n+B\n+C")[0])).toEqual({ additions: 2, deletions: 1 });
   });
 });

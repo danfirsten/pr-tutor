@@ -133,6 +133,7 @@ Added after v1:
 |---|---|---|---|
 | 8 | `slice-8-keyboard` | Keyboard control for every action | Keys only |
 | 9 | `slice-9-local` | `pr-tutor --local`: review an unpushed branch from git, keyed by repo + branch + head SHA, checklist instead of a post | Reads git only; PR mode untouched apart from passing the snapshot to the file reader |
+| 13 | `slice-13-navigation` | Click a line to place the cursor (full file too, which is now commentable), hunk strip, PR map rail, file filter and folders, collapsible and resizable sidebar, breadcrumb, back/forward and deep links, ⌘K palette, Ink & Paper motion, skeleton loading | UI only; the server is untouched apart from pure patch helpers |
 
 Local reviews reuse `Pr` with `number: 0` and a `branch`, plus `local.dir` so the server can reload the snapshot and read files with `git show`, even when an already-running server opened it. `refLabel` (`owner/repo#n` or `owner/repo@branch`) keys the in-memory caches.
 

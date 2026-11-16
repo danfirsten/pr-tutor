@@ -2,9 +2,15 @@ const GROUPS: Array<[string, Array<[string, string]>]> = [
   [
     "Move around",
     [
+      ["⌘K", "Jump to any file, hunk, concern or comment"],
       ["j / k", "Next / previous hunk"],
+      ["g then 1–9", "Go to that hunk in this file"],
       ["n / p", "Next / previous file"],
-      ["f", "Full file on / off"],
+      [". / ,", "Next / previous concern from Claude, across files"],
+      ["⌘[ / ⌘]", "Back / forward to where you jumped from"],
+      ["f", "Full file on / off (keeps your line)"],
+      ["/", "Filter the file list"],
+      ["\\", "Hide / show the file list"],
       ["b / r / m", "Briefing / your review / what you tend to miss"],
       ["J / K", "Scroll the notes (or the page) down / up"],
       ["Tab", "Move between buttons and links; Enter presses one"],
@@ -13,6 +19,9 @@ const GROUPS: Array<[string, Array<[string, string]>]> = [
   [
     "Comment",
     [
+      ["Click a line", "Put the cursor there; ↓ / ↑ carry on from it"],
+      ["⇧ click", "Stretch the cursor to that line"],
+      ["+ in the gutter", "Comment on that line straight away"],
       ["↓ / ↑", "Move the line cursor"],
       ["⇧↓ / ⇧↑", "Stretch it over several lines"],
       ["c or Enter", "Comment on the cursor line or lines"],

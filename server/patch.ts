@@ -67,3 +67,30 @@ export function hunkRows(hunk: PatchHunk): HunkRow[] {
   }
   return rows;
 }
+
+export function fullFileRows(hunks: PatchHunk[], newLineCount: number): HunkRow[] {
+  const rows: HunkRow[] = [];
+  let next = 1;
+  for (const hunk of hunks) {
+    while (next < hunk.newStart) rows.push({ side: "RIGHT", line: next++, changed: false });
+    rows.push(...hunkRows(hunk));
+    next = Math.max(next, hunk.newStart + hunk.newLines);
+  }
+  while (next <= newLineCount) rows.push({ side: "RIGHT", line: next++, changed: false });
+  return rows;
+}
+
+export function lineCount(text: string | null): number {
+  if (!text) return 0;
+  return text.endsWith("\n") ? text.split("\n").length - 1 : text.split("\n").length;
+}
+
+export function hunkSize(hunk: PatchHunk): { additions: number; deletions: number } {
+  let additions = 0;
+  let deletions = 0;
+  for (const text of hunk.text.split("\n").slice(1)) {
+    if (text.startsWith("+")) additions++;
+    else if (text.startsWith("-")) deletions++;
+  }
+  return { additions, deletions };
+}

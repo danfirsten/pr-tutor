@@ -1,5 +1,6 @@
 import type { Pr } from "../../server/types.ts";
 import type { BriefingResult } from "./api.ts";
+import { ProseSkeleton } from "./Skeleton.tsx";
 
 interface Props {
   pr: Pr;
@@ -11,7 +12,7 @@ interface Props {
 export function BriefingView({ pr, result, onOpen, onRetry }: Props) {
   const b = result.briefing;
   return (
-    <div className="prose briefing">
+    <div className="prose briefing fade-in">
       <div className="label">Briefing</div>
       <h2>{pr.title}</h2>
 
@@ -23,7 +24,7 @@ export function BriefingView({ pr, result, onOpen, onRetry }: Props) {
           </button>
         </div>
       )}
-      {!b && result.state !== "error" && <p className="lede muted pulse">Claude is reading the whole PR to give you the map.</p>}
+      {!b && result.state !== "error" && <ProseSkeleton label="Claude is reading the whole PR to give you the map." />}
 
       {b && (
         <>
@@ -78,7 +79,7 @@ export function BriefingView({ pr, result, onOpen, onRetry }: Props) {
         <pre>{pr.body || "No description."}</pre>
       </section>
       <p className="hint">
-        Press <kbd>j</kbd> to start with the first hunk, <kbd>↓</kbd> to move through its lines, <kbd>c</kbd> to comment, or <kbd>?</kbd> for every key.
+        Press <kbd>j</kbd> to start with the first hunk, <kbd>⌘K</kbd> to jump anywhere, click a line (or <kbd>↓</kbd>) to put the cursor on it, <kbd>c</kbd> to comment, or <kbd>?</kbd> for every key.
       </p>
     </div>
   );

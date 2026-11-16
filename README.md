@@ -40,21 +40,26 @@ Everything works from the keyboard. The main keys:
 
 | Key | Does |
 |---|---|
+| `⌘K` | Jump to any file, hunk, concern or comment |
 | `j` / `k` | Next / previous hunk |
+| `g` then `1`–`9` | Go to that hunk in the file |
 | `n` / `p` | Next / previous file |
+| `.` / `,` | Next / previous concern from Claude, across files |
+| `⌘[` / `⌘]` | Back / forward to where you jumped from |
 | `↓` / `↑` | Move the line cursor (hold `⇧` to cover several lines) |
 | `c` or `Enter` | Comment on the cursor line or lines |
 | `e` | Edit your comment on this line |
 | `a` | Use Claude's concern on this line as a comment |
 | `q` / `Q` | Ask Claude about the cursor line(s) / about its concern on this line |
 | `]` / `[` | Jump to your next / previous comment |
-| `f` | Whole file with the changes inline |
+| `f` | Whole file with the changes inline, keeping your line |
+| `/` / `\` | Filter the file list / hide it |
 | `x` | Mark the file reviewed |
 | `b` / `r` / `m` | Briefing / your review / what you tend to miss |
 | `t` | Take first on / off |
 | `?` | Every key, including the ones inside a comment (`⌘↵` save, `Esc` or `⌘.` cancel, `⌥1`–`⌥4` label, `⌥C` coach) |
 
-You can also click a line number (or drag across several) to comment. Pick a label: **blocker** must change before merging, **suggestion** is the author's call, **question** asks to understand, and **nit** is tiny and optional. Press **Coach this** to have Claude check your comment is right and help you word it.
+Click any line to put the cursor there, in a hunk or the whole file, then carry on with `↓` / `↑`. `⇧`-click stretches it, and the `+` in the gutter comments on a line straight away. The strip above the diff shows every hunk in the file, the rail beside it the whole PR, and both mark where Claude found a blocker or should-fix and where you've commented. The address keeps your file, hunk and line, so a reload lands where you were. Pick a label: **blocker** must change before merging, **suggestion** is the author's call, **question** asks to understand, and **nit** is tiny and optional. Press **Coach this** to have Claude check your comment is right and help you word it.
 
 Not sure what a line does, or whether one of Claude's concerns is right? Press `q` to ask about the cursor line or lines (or the whole hunk with no cursor), or **Ask** on a concern. The answer shows in the notes pane, you can follow up, and every question is saved with the PR in `asks.json`, so it's still there next time.
 
